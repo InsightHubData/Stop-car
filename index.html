@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stop Car Auto Elétrica — Agendamentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --black:#0a0a0a;--black2:#151515;--black3:#1e1e1e;
+  --red:#c41414;--red2:#e02020;--red3:#ff3b3b;
+  --gold:#d4af37;
+  --white:#fff;--gray-bg:#f2f2f2;--gray-bd:#e0dcdc;
+  --text:#1a1a1a;--text-sm:#6a6a6a;
+  --green:#1a8c50;--green2:#22a960;
+  --accent:#fdeaea;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:var(--black);min-height:100vh;overflow:hidden}
+
+/* ── Fundo animado ── */
+.bg-canvas{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.bg-canvas::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,#0a0a0a 0%,#1a0d0d 35%,#2b0e0e 65%,#4a0f0f 100%);
+}
+.bg-orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:0;animation:orbFloat linear infinite}
+.bg-orb:nth-child(1){width:520px;height:520px;background:radial-gradient(circle,rgba(196,20,20,.28),transparent 70%);left:-10%;top:-15%;animation-duration:26s;--tx:60px;--ty:-50px;--tx2:-40px;--ty2:70px}
+.bg-orb:nth-child(2){width:360px;height:360px;background:radial-gradient(circle,rgba(212,175,55,.12),transparent 70%);right:-8%;top:15%;animation-duration:24s;animation-delay:-8s;--tx:-50px;--ty:40px;--tx2:60px;--ty2:-50px}
+.bg-orb:nth-child(3){width:300px;height:300px;background:radial-gradient(circle,rgba(224,32,32,.22),transparent 70%);left:30%;bottom:-5%;animation-duration:30s;animation-delay:-14s;--tx:40px;--ty:-60px;--tx2:-50px;--ty2:40px}
+.bg-dots{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:36px 36px;animation:gridDrift 60s linear infinite}
+@keyframes orbFloat{0%{opacity:0;transform:translate(0,0) scale(1)}10%{opacity:1}50%{transform:translate(var(--tx),var(--ty)) scale(1.08)}90%{opacity:1}100%{opacity:0;transform:translate(var(--tx2),var(--ty2)) scale(.96)}}
+@keyframes gridDrift{0%{background-position:0 0}100%{background-position:36px 36px}}
+
+/* ── LOGIN ── */
+#loginWrap{position:fixed;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;padding:20px}
+.ln-block{display:flex;width:100%;max-width:880px;max-height:calc(100vh - 40px);border-radius:20px;overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06)}
+
+.ln-left{
+  flex:0 0 46%;
+  background:linear-gradient(160deg,#000 0%,#150707 30%,#2b0e0e 60%,#4a0f0f 100%);
+  padding:40px 36px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;
+}
+.ln-left::after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.1) 30%,rgba(255,255,255,.1) 70%,transparent)}
+.ln-logo-panel{background:#000;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 20px;margin-bottom:22px;
+  display:flex;align-items:center;justify-content:center;width:100%;
+  box-shadow:0 4px 20px rgba(0,0,0,.4)}
+.ln-logo{height:110px;object-fit:contain}
+.ln-sys-title{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:4px;
+  text-transform:uppercase;color:rgba(255,255,255,.9);margin-bottom:6px;text-align:center}
+.ln-sys-sub{font-size:12.5px;color:rgba(255,255,255,.5);text-align:center;max-width:260px;line-height:1.6}
+.ln-feats{margin-top:26px;display:flex;flex-direction:column;gap:10px;width:100%}
+.ln-feat{display:flex;align-items:center;gap:10px;font-size:12px;color:rgba(255,255,255,.65)}
+.ln-feat-dot{width:6px;height:6px;border-radius:50%;background:var(--red3);flex-shrink:0;
+  box-shadow:0 0 0 3px rgba(224,32,32,.2)}
+.ln-badge{margin-top:26px;display:inline-flex;align-items:center;gap:7px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;padding:6px 14px;font-size:10px;font-weight:600;color:rgba(255,255,255,.55);letter-spacing:.4px}
+.ln-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--red3);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.ln-right{flex:1;background:#fff;padding:40px 38px 32px;display:flex;flex-direction:column;justify-content:center;overflow-y:auto}
+.lc-title{font-family:'Oswald',sans-serif;font-size:24px;font-weight:600;color:var(--black);margin-bottom:4px}
+.lc-desc{font-size:13px;color:var(--text-sm);margin-bottom:22px}
+.field-g{margin-bottom:14px}
+.field-g label{display:block;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--black);opacity:.6;margin-bottom:5px}
+.inp-wrap{position:relative}
+.inp-wrap input{width:100%;padding:11px 14px 11px 40px;border:1.5px solid var(--gray-bd);border-radius:9px;
+  font-size:14px;font-family:'Source Sans 3',sans-serif;background:var(--gray-bg);color:var(--text);transition:.2s}
+.inp-wrap input:focus{outline:none;border-color:var(--red);background:#fff;box-shadow:0 0 0 3px rgba(196,20,20,.12)}
+.inp-wrap .ic{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;opacity:.38}
+.pw-eye{position:absolute;right:13px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:15px;opacity:.32;transition:.2s}
+.pw-eye:hover{opacity:.72}
+.err-box{background:#fdeaea;border:1px solid #f3b8b8;color:var(--red);border-radius:9px;padding:9px 14px;
+  font-size:12.5px;font-weight:500;margin-bottom:14px;display:none;align-items:center;gap:8px;animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.btn-login{width:100%;padding:12px 20px;margin-top:4px;
+  background:linear-gradient(135deg,var(--black) 0%,var(--red) 100%);
+  color:#fff;border:none;border-radius:9px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 14px rgba(196,20,20,.3);
+  transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-login:hover{transform:translateY(-2px);box-shadow:0 7px 24px rgba(196,20,20,.4)}
+.lc-footer{margin-top:20px;padding-top:14px;border-top:1px solid var(--gray-bd);
+  text-align:center;font-size:10px;color:var(--text-sm);opacity:.5;line-height:1.5}
+@media(max-width:640px){
+  #loginWrap{padding:0;align-items:flex-start;overflow-y:auto}
+  .ln-block{flex-direction:column;border-radius:0;max-height:none}
+  .ln-left{flex:none;padding:28px 24px}
+  .ln-left::after{display:none}
+  .ln-right{padding:28px 24px 24px}
+  .ln-feats,.ln-badge{display:none}
+}
+
+/* ── APP ── */
+#appShell{position:fixed;inset:0;background:var(--gray-bg);flex-direction:column;display:none;z-index:5}
+#appShell.active{display:flex;animation:fadeIn .35s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.app-hd{
+  background:linear-gradient(90deg,#000 0%,#1a0a0a 30%,#3a0d0d 60%,#4a0f0f 80%,#c41414 130%);
+  padding:0 22px 0 18px;display:flex;align-items:stretch;justify-content:space-between;
+  box-shadow:0 3px 16px rgba(0,0,0,.4);border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;position:relative;z-index:100;min-height:52px;
+}
+.hd-left{display:flex;align-items:stretch;gap:0}
+.hd-logo-wrap{background:#000;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:4px 10px;display:flex;align-items:center;flex-shrink:0;
+  margin-right:12px;box-shadow:0 1px 6px rgba(0,0,0,.3);align-self:center}
+.hd-logo{height:32px;object-fit:contain}
+.hd-sep{width:1px;background:rgba(255,255,255,.12);margin:10px 0;flex-shrink:0}
+.app-nav{display:flex;gap:0;align-items:stretch;flex:1;background:transparent}
+.nav-tab{padding:0 18px;font-family:'Oswald',sans-serif;font-size:13px;font-weight:500;letter-spacing:1px;
+  text-transform:uppercase;color:rgba(255,255,255,.45);cursor:pointer;
+  border-bottom:3px solid transparent;border-top:3px solid transparent;transition:.2s;
+  user-select:none;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.nav-tab:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05)}
+.nav-tab.active{color:#fff;border-bottom-color:var(--red3);background:rgba(255,255,255,.06)}
+.hd-right{display:flex;align-items:center;gap:8px;padding-left:14px}
+.hd-pill{height:30px;padding:0 12px;border-radius:6px;font-size:12px;font-weight:600;
+  display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);color:#fff}
+.btn-hd{height:30px;padding:0 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.2s;display:flex;align-items:center;gap:5px}
+.btn-hd-red{background:linear-gradient(135deg,#c41414,#ff3b3b);color:#fff;box-shadow:0 2px 8px rgba(196,20,20,.4)}
+.btn-hd-red:hover{transform:translateY(-1px)}
+
+.app-body{flex:1;overflow-y:auto;padding:26px}
+.panel{display:none}.panel.active{display:block}
+
+.sec-title{font-family:'Oswald',sans-serif;font-size:26px;font-weight:600;color:var(--black);
+  letter-spacing:.3px;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.sec-sub{font-size:13px;color:var(--text-sm);margin-bottom:22px}
+
+.form-card{background:#fff;border-radius:12px;padding:22px 26px;
+  box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid var(--gray-bd);margin-bottom:18px}
+.form-card h3{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--red);margin-bottom:14px;padding-bottom:10px;
+  border-bottom:2px solid var(--accent);display:flex;align-items:center;gap:8px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+.row5{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--black)}
+.field input,.field select,.field textarea{
+  padding:10px 12px;border:1.5px solid var(--gray-bd);border-radius:7px;
+  font-size:13.5px;font-family:'Source Sans 3',sans-serif;background:var(--gray-bg);color:var(--text);transition:.2s}
+.field input:focus,.field select:focus,.field textarea:focus{
+  outline:none;border-color:var(--red);background:#fff;box-shadow:0 0 0 3px rgba(196,20,20,.1)}
+.field textarea{resize:vertical;min-height:68px}
+.req-star{color:var(--red);font-size:11px;margin-left:3px}
+
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:calc(100% + 3px);left:0;right:0;background:#fff;
+  border:1.5px solid var(--red);border-radius:7px;z-index:9999;max-height:220px;overflow-y:auto;
+  box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.autocomplete-list div{padding:9px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--gray-bd)}
+.autocomplete-list div:last-child{border-bottom:none}
+.autocomplete-list div:hover{background:var(--accent);color:var(--black)}
+.autocomplete-list .ac-label{font-weight:700;color:var(--black)}
+.autocomplete-list .ac-sub{font-size:11px;color:var(--text-sm)}
+
+.prazo-box{background:linear-gradient(135deg,#fdeaea,#fdf3f3);border:1.5px solid #f3c0c0;border-radius:10px;padding:14px 18px;margin-top:6px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.prazo-box .pb-left{display:flex;align-items:center;gap:10px}
+.prazo-box .pb-ic{font-size:22px}
+.prazo-box .pb-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--red)}
+.prazo-box .pb-val{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;color:var(--black)}
+.prazo-box .pb-sub{font-size:11px;color:var(--text-sm)}
+
+.btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+.btn-primary{padding:11px 22px;background:linear-gradient(135deg,var(--black) 0%,var(--red) 100%);
+  color:#fff;border:none;border-radius:8px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;
+  letter-spacing:.8px;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);
+  transition:.2s;display:flex;align-items:center;gap:7px}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 7px 22px rgba(0,0,0,.35)}
+.btn-green{background:linear-gradient(135deg,#1a6b3a 0%,var(--green2) 100%);box-shadow:0 4px 14px rgba(26,140,80,.3)}
+.btn-green:hover{box-shadow:0 7px 22px rgba(26,140,80,.4)}
+.btn-outline{padding:11px 22px;background:transparent;color:var(--black);border:1.5px solid var(--gray-bd);
+  border-radius:8px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:.8px;
+  text-transform:uppercase;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:7px}
+.btn-outline:hover{border-color:var(--red);color:var(--red);background:var(--accent)}
+
+/* Agenda / lista */
+.sum-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px}
+.sum-card{background:#fff;border-radius:10px;padding:16px 18px;border:1px solid var(--gray-bd);
+  box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.sum-card .sc-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text-sm)}
+.sum-card .sc-val{font-family:'Oswald',sans-serif;font-size:26px;font-weight:600;color:var(--black)}
+.sum-card.red .sc-val{color:var(--red)}.sum-card.green .sc-val{color:var(--green)}
+.hist-filters{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;align-items:flex-end}
+.hist-filters input,.hist-filters select{padding:9px 12px;border:1.5px solid var(--gray-bd);border-radius:7px;font-size:13px;font-family:'Source Sans 3',sans-serif;background:#fff}
+.hist-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.06);border:1px solid var(--gray-bd);overflow:hidden}
+.hist-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.hist-tbl th{background:var(--black);color:#fff;padding:10px 12px;text-align:left;
+  font-family:'Oswald',sans-serif;font-size:10.5px;letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
+.hist-tbl td{padding:10px 12px;border-bottom:1px solid var(--gray-bd);color:var(--text)}
+.hist-tbl tr:last-child td{border-bottom:none}.hist-tbl tr:hover td{background:var(--accent)}
+.hist-acts{display:flex;gap:6px}
+.btn-sm{padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.18s}
+.btn-sm-b{background:var(--accent);color:var(--red);border:1px solid #f3c0c0}.btn-sm-b:hover{background:var(--red);color:#fff}
+.btn-sm-g{background:#d4edda;color:#155724;border:1px solid #b8dacc}.btn-sm-g:hover{background:var(--green);color:#fff}
+.btn-sm-r{background:#fdeaea;color:var(--red);border:1px solid #f3c0c0}.btn-sm-r:hover{background:var(--red);color:#fff}
+.status-pill{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;display:inline-block}
+.st-Agendado{background:#e8f0fd;color:#1d5fa6}
+.st-EmAndamento{background:#fff4d6;color:#a56c00}
+.st-AguardandoPeca{background:#f3e6fb;color:#7a1fa2}
+.st-Concluido{background:#e4f7ea;color:#1a8c50}
+.st-Entregue{background:#e4f7ea;color:#1a6b3a;font-weight:800}
+.st-Cancelado{background:#fdeaea;color:#c0392b}
+.prio-Urgente{color:var(--red);font-weight:800}
+.prio-Normal{color:var(--text-sm)}
+.empty-st{text-align:center;padding:60px 20px;color:var(--text-sm)}
+.empty-st .ei{font-size:48px;margin-bottom:12px}
+.empty-st h4{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;margin-bottom:6px}
+
+/* Cadastros clientes */
+.cad-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.cad-list{background:#fff;border-radius:10px;border:1px solid var(--gray-bd);overflow:hidden;display:flex;flex-direction:column}
+.cad-list-header{background:var(--black);color:#fff;padding:11px 15px;
+  font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between}
+.cad-item{padding:10px 13px;border-bottom:1px solid var(--gray-bd);display:flex;align-items:center;
+  justify-content:space-between;font-size:13px}
+.cad-item:last-child{border-bottom:none}.cad-item:hover{background:var(--accent)}
+.cad-item-name{font-weight:600;color:var(--black)}.cad-item-sub{font-size:11px;color:var(--text-sm)}
+.cad-empty{padding:28px;text-align:center;color:var(--text-sm);font-size:13px}
+
+/* Arquivos de carro (placeholder) */
+.arq-hero{background:linear-gradient(135deg,var(--black) 0%,#2b0e0e 55%,var(--red) 140%);border-radius:16px;padding:40px 34px;color:#fff;position:relative;overflow:hidden;margin-bottom:20px}
+.arq-hero::after{content:'🗂️';position:absolute;right:24px;top:50%;transform:translateY(-50%);font-size:90px;opacity:.12}
+.arq-hero h2{font-family:'Oswald',sans-serif;font-size:26px;font-weight:600;margin-bottom:8px}
+.arq-hero p{font-size:13.5px;color:rgba(255,255,255,.75);max-width:520px;line-height:1.6}
+.arq-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin-top:14px}
+.arq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.arq-card{background:#fff;border:1px solid var(--gray-bd);border-radius:12px;padding:20px;text-align:center;opacity:.55}
+.arq-card .ai{font-size:30px;margin-bottom:8px}
+.arq-card h4{font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;color:var(--black);margin-bottom:4px}
+.arq-card p{font-size:11.5px;color:var(--text-sm)}
+
+/* Modais */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  backdrop-filter:blur(4px);z-index:8000;align-items:center;justify-content:center;padding:20px}
+.modal-ov.open{display:flex;animation:fadeIn .2s ease}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:560px;
+  max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.35);padding:30px}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.modal-hd h3{font-family:'Oswald',sans-serif;font-size:20px;font-weight:600;color:var(--black);display:flex;align-items:center;gap:8px}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;cursor:pointer;
+  background:var(--gray-bg);color:var(--text-sm);font-size:16px;display:flex;align-items:center;justify-content:center;transition:.15s}
+.modal-close:hover{background:#fdeaea;color:var(--red)}
+
+/* Toast */
+.toast-w{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--black);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;
+  font-weight:500;box-shadow:0 6px 20px rgba(0,0,0,.4);animation:slideUp .3s ease;display:flex;align-items:center;gap:8px}
+.toast.ok{background:var(--green)}.toast.err{background:var(--red)}
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:768px){
+  .app-hd{padding:8px 14px;flex-wrap:wrap;gap:6px}
+  .app-body{padding:14px}
+  .row2,.row3,.row4,.row5{grid-template-columns:1fr}
+  .cad-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="bg-canvas"><div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div></div>
+<div class="bg-dots"></div>
+<div class="toast-w" id="toastW"></div>
+
+<!-- ════ LOGIN ════ -->
+<div id="loginWrap">
+  <div class="ln-block">
+    <div class="ln-left">
+      <div class="ln-logo-panel">
+        <img class="ln-logo" id="lnLogoImg" src="logo.png" alt="Stop Car"
+          onerror="this.style.display='none';document.getElementById('lnLogoFallback').style.display='block'">
+        <span id="lnLogoFallback" style="display:none;font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:1px">STOP <span style="color:var(--red3)">CAR</span></span>
+      </div>
+      <div class="ln-sys-title">Stop Car — Sistema de Agendamentos</div>
+      <div class="ln-sys-sub">Controle de agendamentos, ordens de serviço e histórico de atendimentos da auto elétrica.</div>
+      <div class="ln-feats">
+        <div class="ln-feat"><div class="ln-feat-dot"></div><span>Agendamento por veículo e defeito</span></div>
+        <div class="ln-feat"><div class="ln-feat-dot"></div><span>Prazo estimado automático por serviço</span></div>
+        <div class="ln-feat"><div class="ln-feat-dot"></div><span>Agenda com status em tempo real</span></div>
+        <div class="ln-feat"><div class="ln-feat-dot"></div><span>Cadastro de clientes e veículos</span></div>
+      </div>
+      <div class="ln-badge"><div class="ln-badge-dot"></div>Sistema ativo · Acesso restrito</div>
+    </div>
+    <div class="ln-right">
+      <div class="lc-title">Bem-vindo de volta</div>
+      <div class="lc-desc">Entre com suas credenciais para acessar a agenda.</div>
+      <div class="err-box" id="errBox" style="display:none">⚠️ Usuário ou senha inválidos.</div>
+      <form id="loginForm" onsubmit="doLogin(event)">
+        <div class="field-g">
+          <label>Usuário</label>
+          <div class="inp-wrap">
+            <input type="text" id="uIn" placeholder="Digite seu usuário" autocomplete="username">
+            <span class="ic">👤</span>
+          </div>
+        </div>
+        <div class="field-g">
+          <label>Senha</label>
+          <div class="inp-wrap">
+            <input type="password" id="pIn" placeholder="Digite sua senha" autocomplete="current-password">
+            <span class="ic">🔒</span>
+            <span class="pw-eye" id="pwEye" onclick="togglePw()">👁️</span>
+          </div>
+        </div>
+        <button type="submit" class="btn-login">🔓 Acessar sistema</button>
+      </form>
+      <div class="lc-footer">Stop Car Auto Elétrica &nbsp;·&nbsp; ABS · Airbag · Injeção · Módulos<br>WhatsApp (31) 98573-0440</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="appShell">
+  <header class="app-hd">
+    <div class="hd-left">
+      <div class="hd-logo-wrap">
+        <img class="hd-logo" id="hdLogoImg" src="logo.png" alt="Stop Car"
+          onerror="this.style.display='none';document.getElementById('hdLogoTxt').style.display='flex'">
+        <span id="hdLogoTxt" style="display:none;font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#fff">STOP <span style="color:#ff5050">CAR</span></span>
+      </div>
+      <div class="hd-sep"></div>
+      <nav class="app-nav">
+        <div class="nav-tab active" data-tab="tabNovo" onclick="switchTab(this)">📅 Novo Agendamento</div>
+        <div class="nav-tab" data-tab="tabAgenda" onclick="switchTab(this)">🗓️ Agenda</div>
+        <div class="nav-tab" data-tab="tabArq" onclick="switchTab(this)">📁 Arquivos de Carro</div>
+        <div class="nav-tab" data-tab="tabCad" onclick="switchTab(this)">👥 Clientes</div>
+      </nav>
+    </div>
+    <div class="hd-right">
+      <div class="hd-pill" id="hdUser">👤 ...</div>
+      <button class="btn-hd btn-hd-red" onclick="doLogout()">🚪 Sair</button>
+    </div>
+  </header>
+  <div class="app-body">
+
+    <!-- ════ NOVO AGENDAMENTO ════ -->
+    <div class="panel active" id="tabNovo">
+      <div class="sec-title">📅 Novo Agendamento</div>
+      <div class="sec-sub">Cadastre a entrada do veículo, o defeito relatado e o prazo estimado de atendimento.</div>
+
+      <div class="form-card">
+        <h3>📌 Identificação do Agendamento</h3>
+        <div class="row4">
+          <div class="field"><label>Nº do Agendamento <span class="req-star">★</span></label>
+            <input type="text" id="fNum" style="background:var(--accent);font-weight:700;color:var(--red)"></div>
+          <div class="field"><label>Data de Entrada <span class="req-star">★</span></label>
+            <input type="date" id="fData"></div>
+          <div class="field"><label>Horário de Entrada</label>
+            <input type="time" id="fHora" value="08:00"></div>
+          <div class="field"><label>Prioridade</label>
+            <select id="fPrioridade" onchange="calcPrazo()">
+              <option value="Normal">Normal</option>
+              <option value="Urgente">🔴 Urgente</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h3>👤 Cliente</h3>
+        <div class="row3">
+          <div class="field" style="grid-column:span 2">
+            <label>Nome do Cliente <span class="req-star">★</span></label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="fCliente" placeholder="Nome do cliente..." autocomplete="off" oninput="acSearchCliente()">
+              <div class="autocomplete-list" id="fCliente_list" style="display:none"></div>
+            </div>
+          </div>
+          <div class="field"><label>Telefone / WhatsApp</label>
+            <input type="text" id="fTelefone" placeholder="(00) 00000-0000"></div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h3>🚗 Dados do Veículo</h3>
+        <div class="row5">
+          <div class="field"><label>Modelo <span class="req-star">★</span></label>
+            <input type="text" id="fModelo" placeholder="Ex: Onix, Hilux..."></div>
+          <div class="field"><label>Marca</label>
+            <input type="text" id="fMarca" placeholder="Ex: Chevrolet"></div>
+          <div class="field"><label>Ano</label>
+            <input type="text" id="fAno" placeholder="Ex: 2019/2020"></div>
+          <div class="field"><label>Placa <span class="req-star">★</span></label>
+            <input type="text" id="fPlaca" placeholder="ABC1D23" style="text-transform:uppercase;font-weight:700"></div>
+          <div class="field"><label>Cor</label>
+            <input type="text" id="fCor" placeholder="Ex: Prata"></div>
+        </div>
+        <div class="row3" style="margin-top:14px">
+          <div class="field"><label>Km Atual</label>
+            <input type="text" id="fKm" placeholder="Ex: 85.000 km"></div>
+          <div class="field"><label>Combustível</label>
+            <select id="fCombustivel">
+              <option>Flex</option><option>Gasolina</option><option>Etanol</option>
+              <option>Diesel</option><option>GNV</option><option>Elétrico/Híbrido</option>
+            </select>
+          </div>
+          <div class="field"><label>Chave Reserva Entregue?</label>
+            <select id="fChave"><option>Não</option><option>Sim</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h3>🔧 Serviço e Defeito</h3>
+        <div class="row2">
+          <div class="field"><label>Tipo de Serviço <span class="req-star">★</span></label>
+            <select id="fTipoServico" onchange="calcPrazo()">
+              <option value="">Selecione o tipo de serviço...</option>
+              <option value="diag">🔍 Diagnóstico Elétrico</option>
+              <option value="reset_modulo">🧠 Reset de Módulo (ABS/Airbag/Injeção)</option>
+              <option value="chicote">🔌 Reparo de Chicote / Fiação</option>
+              <option value="troca_modulo">🧩 Troca de Módulo</option>
+              <option value="alarme">🚨 Instalação de Alarme / Rastreador</option>
+              <option value="arranque">🔋 Motor de Arranque / Alternador</option>
+              <option value="revisao">🛠️ Revisão Elétrica Completa</option>
+              <option value="peca_encomenda">📦 Serviço com Peça a Encomendar</option>
+              <option value="outro">✏️ Outro (definir prazo manualmente)</option>
+            </select>
+          </div>
+          <div class="field"><label>Mecânico Responsável</label>
+            <input type="text" id="fMecanico" placeholder="Nome do responsável"></div>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Defeito Relatado / Observações do Cliente <span class="req-star">★</span></label>
+          <textarea id="fDefeito" rows="4" placeholder="Descreva o defeito relatado pelo cliente. Ex: Veículo apresentando falha no painel, luz de injeção acesa, não pega na primeira..."></textarea>
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Observações Internas (opcional)</label>
+          <textarea id="fObsInterna" rows="2" placeholder="Notas internas da oficina, não visíveis ao cliente"></textarea>
+        </div>
+
+        <div class="prazo-box" id="prazoBox">
+          <div class="pb-left">
+            <div class="pb-ic">⏱️</div>
+            <div>
+              <div class="pb-lbl">Previsão Estimada de Entrega</div>
+              <div class="pb-val" id="prazoVal">Selecione o tipo de serviço</div>
+              <div class="pb-sub" id="prazoSub"></div>
+            </div>
+          </div>
+          <div class="field" style="min-width:170px">
+            <label>Ajustar Previsão</label>
+            <input type="date" id="fPrevisao" onchange="prazoManual=true">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h3>📎 Situação Inicial</h3>
+        <div class="row3">
+          <div class="field"><label>Status</label>
+            <select id="fStatus">
+              <option>Agendado</option><option>Em Andamento</option>
+            </select>
+          </div>
+          <div class="field"><label>Forma de Contato Preferida</label>
+            <select id="fContato"><option>WhatsApp</option><option>Ligação</option><option>Presencial</option></select>
+          </div>
+          <div class="field"><label>Autorizado Orçamento Prévio?</label>
+            <select id="fOrcamento"><option>Sim</option><option>Não</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary btn-green" onclick="salvarAgendamento()">💾 Salvar Agendamento</button>
+        <button class="btn-primary" onclick="gerarPdfOS()">🖨️ Gerar Ordem de Serviço (PDF)</button>
+        <button class="btn-outline" onclick="clearForm()">🗑️ Limpar</button>
+      </div>
+    </div>
+
+    <!-- ════ AGENDA ════ -->
+    <div class="panel" id="tabAgenda">
+      <div class="sec-title">🗓️ Agenda de Atendimentos</div>
+      <div class="sec-sub">Acompanhe todos os veículos agendados, em andamento e concluídos.</div>
+      <div class="sum-row">
+        <div class="sum-card red"><div class="sc-lbl">Agendados Hoje</div><div class="sc-val" id="smHoje">0</div></div>
+        <div class="sum-card"><div class="sc-lbl">Em Andamento</div><div class="sc-val" id="smAndamento">0</div></div>
+        <div class="sum-card"><div class="sc-lbl">Aguardando Peça</div><div class="sc-val" id="smPeca">0</div></div>
+        <div class="sum-card green"><div class="sc-lbl">Concluídos / Entregues</div><div class="sc-val" id="smConcluido">0</div></div>
+      </div>
+      <div class="hist-filters">
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--black);display:block;margin-bottom:5px">Data de Entrada</label>
+          <input type="date" id="fFiltroData" onchange="renderAgenda()">
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--black);display:block;margin-bottom:5px">Status</label>
+          <select id="fFiltroStatus" onchange="renderAgenda()">
+            <option value="">Todos</option>
+            <option>Agendado</option><option>Em Andamento</option>
+            <option>Aguardando Peça</option><option>Concluído</option>
+            <option>Entregue</option><option>Cancelado</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--black);display:block;margin-bottom:5px">Buscar</label>
+          <input type="text" id="fFiltroBusca" placeholder="Cliente, placa, modelo..." oninput="renderAgenda()" style="min-width:220px">
+        </div>
+        <button class="btn-outline" style="height:38px;margin-top:20px" onclick="document.getElementById('fFiltroData').value='';document.getElementById('fFiltroStatus').value='';document.getElementById('fFiltroBusca').value='';renderAgenda()">✕ Limpar Filtros</button>
+      </div>
+      <div class="hist-wrap">
+        <table class="hist-tbl">
+          <thead><tr>
+            <th>Nº</th><th>Entrada</th><th>Cliente</th><th>Veículo / Placa</th>
+            <th>Serviço</th><th>Previsão</th><th>Prioridade</th><th>Status</th><th>Ações</th>
+          </tr></thead>
+          <tbody id="agendaBody"></tbody>
+        </table>
+        <div id="agendaEmpty" class="empty-st" style="display:none">
+          <div class="ei">🚗</div><h4>Nenhum agendamento encontrado</h4>
+          <p>Crie um novo agendamento na aba "Novo Agendamento".</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ ARQUIVOS DE CARRO ════ -->
+    <div class="panel" id="tabArq">
+      <div class="sec-title">📁 Arquivos de Carro</div>
+      <div class="sec-sub">Área dedicada a arquivos de reset de módulos (ABS, Airbag, Injeção) por modelo de veículo.</div>
+      <div class="arq-hero">
+        <h2>🔧 Em breve: Catálogo de Arquivos por Modelo</h2>
+        <p>Esta tela vai reunir os arquivos originais e resetados de módulos (ABS, Airbag, Injeção) organizados por marca e modelo de veículo, prontos para consulta interna e futura venda avulsa.</p>
+        <div class="arq-badge">🚧 Módulo em construção</div>
+      </div>
+      <div class="arq-grid">
+        <div class="arq-card"><div class="ai">🧠</div><h4>Arquivos ABS</h4><p>Organização por marca / modelo / módulo</p></div>
+        <div class="arq-card"><div class="ai">🎈</div><h4>Arquivos Airbag</h4><p>Reset e backup por chassi</p></div>
+        <div class="arq-card"><div class="ai">⛽</div><h4>Arquivos Injeção</h4><p>Mapas originais e editados</p></div>
+        <div class="arq-card"><div class="ai">💳</div><h4>Venda Avulsa</h4><p>Catálogo pronto para venda futura</p></div>
+      </div>
+    </div>
+
+    <!-- ════ CADASTROS ════ -->
+    <div class="panel" id="tabCad">
+      <div class="sec-title">👥 Clientes</div>
+      <div class="sec-sub">Cadastre clientes para preenchimento automático nos agendamentos.</div>
+      <div class="cad-grid">
+        <div>
+          <div class="form-card" style="margin-bottom:16px">
+            <h3>👤 Novo Cliente</h3>
+            <div class="field" style="margin-bottom:12px"><label>Nome Completo <span class="req-star">★</span></label>
+              <input type="text" id="cadCliNome" placeholder="Ex: João da Silva"></div>
+            <div class="row2" style="margin-bottom:12px">
+              <div class="field"><label>Telefone / WhatsApp</label><input type="text" id="cadCliTel" placeholder="(00) 00000-0000"></div>
+              <div class="field"><label>CPF/CNPJ (opcional)</label><input type="text" id="cadCliDoc" placeholder="000.000.000-00"></div>
+            </div>
+            <div class="field"><label>Endereço (opcional)</label><input type="text" id="cadCliEndereco" placeholder="Rua, número, bairro"></div>
+            <button class="btn-primary" style="margin-top:14px;padding:10px 18px;font-size:13px" onclick="saveClient()">✅ Salvar Cliente</button>
+          </div>
+        </div>
+        <div>
+          <div class="cad-list">
+            <div class="cad-list-header">
+              <span>👥 Clientes Cadastrados <span id="cliCount" style="font-size:11px;opacity:.7;font-family:'Source Sans 3',sans-serif;font-weight:400">0</span></span>
+            </div>
+            <div id="cliList" style="max-height:400px;overflow-y:auto;scrollbar-width:thin">
+              <div class="cad-empty">Nenhum cliente cadastrado.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Editar Cliente -->
+<div class="modal-ov" id="cliEditOv" onclick="closeCliEdit(event)">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3>✏️ Editar Cliente</h3>
+      <button class="modal-close" onclick="closeCliEdit()">✕</button>
+    </div>
+    <input type="hidden" id="editCliId">
+    <div class="field" style="margin-bottom:12px"><label>Nome Completo <span class="req-star">★</span></label>
+      <input type="text" id="editCliNome"></div>
+    <div class="row2" style="margin-bottom:12px">
+      <div class="field"><label>Telefone</label><input type="text" id="editCliTel"></div>
+      <div class="field"><label>CPF/CNPJ</label><input type="text" id="editCliDoc"></div>
+    </div>
+    <div class="field" style="margin-bottom:18px"><label>Endereço</label><input type="text" id="editCliEndereco"></div>
+    <div class="btn-row">
+      <button class="btn-primary btn-green" onclick="saveEditClient()">💾 Salvar</button>
+      <button class="btn-outline" onclick="closeCliEdit()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   EMPRESA
+   (troque estes dados pelos definitivos da oficina)
+═══════════════════════════════════════ */
+var EMPRESA = {
+  nome:      'STOP CAR AUTO ELÉTRICA',
+  slogan:    'ABS · Airbag · Injeção · Módulos',
+  tel:       '(31) 98573-0440',
+  email:     '',
+  cidade:    '',
+  uf:        ''
+};
+
+/* ═══════════════════════════════════════
+   USUÁRIOS
+   (troque usuário/senha pelos definitivos)
+═══════════════════════════════════════ */
+var USERS = {
+  'stopcar':  { senha:'StopCar2026@', nome:'Recepção' },
+  'admin':    { senha:'admin123',     nome:'Administrador' }
+};
+
+/* ═══════════════════════════════════════
+   NOTA SOBRE BANCO DE DADOS
+   Este arquivo usa localStorage (armazenamento local do navegador)
+   para persistir os dados, no mesmo padrão de estrutura do sistema
+   de licitações. Para sincronizar entre computadores/dispositivos,
+   basta plugar aqui um projeto Firebase (mesmo modelo do sistema
+   de propostas) — os pontos de leitura/escrita já estão isolados
+   nas funções saveLSAgend(), saveLSCli() e loadAll().
+═══════════════════════════════════════ */
+
+var currentUser = null;
+var editingId = null;
+var agendSeq = parseInt(localStorage.getItem('sc_seq') || '0');
+var prazoManual = false;
+
+var agendamentos_ = [];
+var clientes_ = [];
+
+try{ agendamentos_ = JSON.parse(localStorage.getItem('sc_agend')||'[]'); }catch(e){ agendamentos_=[]; }
+try{ clientes_ = JSON.parse(localStorage.getItem('sc_cli')||'[]'); }catch(e){ clientes_=[]; }
+
+function saveLSAgend(){ try{ localStorage.setItem('sc_agend', JSON.stringify(agendamentos_)); }catch(e){} }
+function saveLSCli(){ try{ localStorage.setItem('sc_cli', JSON.stringify(clientes_)); }catch(e){} }
+
+/* ═══════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════ */
+function doLogin(e){
+  if(e) e.preventDefault();
+  var u = (document.getElementById('uIn').value||'').trim().toLowerCase();
+  var p = (document.getElementById('pIn').value||'').trim();
+  var user = USERS[u];
+  if(user && user.senha===p){
+    currentUser=u;
+    document.getElementById('loginWrap').style.display='none';
+    var app=document.getElementById('appShell');
+    app.style.display='flex';
+    app.classList.add('active');
+    document.getElementById('hdUser').textContent='👤 '+user.nome;
+    initApp();
+  } else {
+    var eb=document.getElementById('errBox');
+    eb.style.display='flex';
+    setTimeout(function(){ eb.style.display='none'; },3500);
+    document.getElementById('pIn').value='';
+  }
+}
+function togglePw(){
+  var i=document.getElementById('pIn'),eye=document.getElementById('pwEye');
+  i.type=i.type==='password'?'text':'password';
+  eye.textContent=i.type==='password'?'👁️':'🙈';
+}
+function doLogout(){
+  currentUser=null;
+  document.getElementById('appShell').style.display='none';
+  document.getElementById('appShell').classList.remove('active');
+  document.getElementById('loginWrap').style.display='flex';
+  document.getElementById('uIn').value='';
+  document.getElementById('pIn').value='';
+}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+function initApp(){
+  document.getElementById('fData').value=new Date().toISOString().split('T')[0];
+  nextAgendNum();
+  renderAgenda();
+  renderCadLists();
+}
+
+/* ═══════════════════════════════════════
+   TABS
+═══════════════════════════════════════ */
+function switchTab(el){
+  document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById(el.dataset.tab).classList.add('active');
+  if(el.dataset.tab==='tabAgenda') renderAgenda();
+  if(el.dataset.tab==='tabCad') renderCadLists();
+  if(el.dataset.tab!=='tabNovo') editingId=null;
+}
+
+/* ═══════════════════════════════════════
+   NÚMERO DO AGENDAMENTO
+═══════════════════════════════════════ */
+function nextAgendNum(bump){
+  if(bump){ agendSeq++; localStorage.setItem('sc_seq',agendSeq); }
+  document.getElementById('fNum').value='OS'+String(agendSeq+1).padStart(5,'0');
+}
+
+/* ═══════════════════════════════════════
+   AUTOCOMPLETE CLIENTE
+═══════════════════════════════════════ */
+function acSearchCliente(){
+  var val=document.getElementById('fCliente').value.toLowerCase();
+  var list=document.getElementById('fCliente_list');
+  if(!val||val.length<1){ list.style.display='none'; return; }
+  var filtered=clientes_.filter(function(c){ return (c.nome||'').toLowerCase().includes(val)||(c.tel||'').toLowerCase().includes(val); });
+  if(!filtered.length){ list.style.display='none'; return; }
+  list.innerHTML='';
+  filtered.forEach(function(item){
+    var d=document.createElement('div');
+    d.innerHTML='<div class="ac-label">'+item.nome+'</div><div class="ac-sub">Tel: '+(item.tel||'—')+'</div>';
+    d.onclick=function(){
+      document.getElementById('fCliente').value=item.nome;
+      document.getElementById('fTelefone').value=item.tel||'';
+      list.style.display='none';
+    };
+    list.appendChild(d);
+  });
+  list.style.display='block';
+}
+document.addEventListener('click',function(e){
+  document.querySelectorAll('.autocomplete-list').forEach(function(l){ if(!l.parentElement.contains(e.target)) l.style.display='none'; });
+});
+
+/* ═══════════════════════════════════════
+   LÓGICA INTELIGENTE DE PRAZO
+═══════════════════════════════════════ */
+// Prazo em horas úteis estimado por tipo de serviço (auto elétrica)
+var PRAZOS = {
+  diag:            { horas: 2,  label:'Diagnóstico Elétrico',                nota:'Diagnóstico costuma sair no mesmo dia.' },
+  reset_modulo:    { horas: 3,  label:'Reset de Módulo (ABS/Airbag/Injeção)', nota:'Serviço rápido, geralmente entregue no mesmo dia.' },
+  chicote:         { horas: 10, label:'Reparo de Chicote / Fiação',          nota:'Pode levar até 2 dias úteis, conforme extensão do dano.' },
+  troca_modulo:    { horas: 6,  label:'Troca de Módulo',                    nota:'Normalmente concluído em 1 dia útil.' },
+  alarme:          { horas: 5,  label:'Instalação de Alarme / Rastreador',  nota:'Instalação leva cerca de meio período.' },
+  arranque:        { horas: 8,  label:'Motor de Arranque / Alternador',     nota:'Reparo ou troca em até 1 dia útil.' },
+  revisao:         { horas: 16, label:'Revisão Elétrica Completa',          nota:'Serviço mais extenso, de 2 a 3 dias úteis.' },
+  peca_encomenda:  { horas: 48, label:'Serviço com Peça a Encomendar',      nota:'Prazo depende do fornecedor — estimativa de 5 a 7 dias úteis.' },
+  outro:           { horas: 8,  label:'Outro Serviço',                     nota:'Ajuste a previsão manualmente conforme avaliação.' }
+};
+var HORAS_TRABALHO_DIA = 8; // 08h às 12h / 13h às 18h aprox (8h úteis)
+
+function addHorasUteis(dataBase, horas){
+  var d=new Date(dataBase.getTime());
+  var restante=horas;
+  // Se cair fora do horário comercial, começa no próximo dia útil às 08h
+  while(restante>0){
+    var diaSemana=d.getDay();
+    if(diaSemana===0){ d.setDate(d.getDate()+1); d.setHours(8,0,0,0); continue; } // domingo
+    if(diaSemana===6){ d.setDate(d.getDate()+2); d.setHours(8,0,0,0); continue; } // sábado -> segunda
+    var consumir=Math.min(restante,HORAS_TRABALHO_DIA);
+    d.setHours(d.getHours()+consumir);
+    restante-=consumir;
+    if(restante>0){ d.setDate(d.getDate()+1); d.setHours(8,0,0,0); }
+  }
+  return d;
+}
+
+function calcPrazo(){
+  var tipo=document.getElementById('fTipoServico').value;
+  var prioridade=document.getElementById('fPrioridade').value;
+  var box=document.getElementById('prazoBox');
+  var valEl=document.getElementById('prazoVal');
+  var subEl=document.getElementById('prazoSub');
+  if(!tipo){ valEl.textContent='Selecione o tipo de serviço'; subEl.textContent=''; return; }
+  var conf=PRAZOS[tipo];
+  var horas=conf.horas;
+  if(prioridade==='Urgente') horas=Math.max(1,Math.round(horas*0.6));
+  var dataStr=document.getElementById('fData').value||new Date().toISOString().split('T')[0];
+  var horaStr=document.getElementById('fHora').value||'08:00';
+  var base=new Date(dataStr+'T'+horaStr+':00');
+  var prev=addHorasUteis(base,horas);
+  var prevStr=prev.toISOString().split('T')[0];
+  if(!prazoManual){ document.getElementById('fPrevisao').value=prevStr; }
+  valEl.textContent=prev.toLocaleDateString('pt-BR')+' às '+String(prev.getHours()).padStart(2,'0')+':'+String(prev.getMinutes()).padStart(2,'0');
+  subEl.textContent=conf.nota+(prioridade==='Urgente'?' ⚡ Prioridade urgente aplicada.':'');
+}
+['fData','fHora'].forEach(function(id){
+  document.addEventListener('DOMContentLoaded',function(){
+    var el=document.getElementById(id); if(el) el.addEventListener('change',calcPrazo);
+  });
+});
+document.addEventListener('DOMContentLoaded',function(){
+  var d=document.getElementById('fData'); if(d) d.addEventListener('change',calcPrazo);
+  var h=document.getElementById('fHora'); if(h) h.addEventListener('change',calcPrazo);
+});
+
+/* ═══════════════════════════════════════
+   FORM DATA
+═══════════════════════════════════════ */
+function getFormData(){
+  var id=editingId||Date.now();
+  return {
+    id:id,
+    num:document.getElementById('fNum').value,
+    data:document.getElementById('fData').value,
+    hora:document.getElementById('fHora').value,
+    prioridade:document.getElementById('fPrioridade').value,
+    cliente:document.getElementById('fCliente').value,
+    telefone:document.getElementById('fTelefone').value,
+    modelo:document.getElementById('fModelo').value,
+    marca:document.getElementById('fMarca').value,
+    ano:document.getElementById('fAno').value,
+    placa:document.getElementById('fPlaca').value.toUpperCase(),
+    cor:document.getElementById('fCor').value,
+    km:document.getElementById('fKm').value,
+    combustivel:document.getElementById('fCombustivel').value,
+    chave:document.getElementById('fChave').value,
+    tipoServico:document.getElementById('fTipoServico').value,
+    tipoServicoLabel:(PRAZOS[document.getElementById('fTipoServico').value]||{}).label||'',
+    mecanico:document.getElementById('fMecanico').value,
+    defeito:document.getElementById('fDefeito').value,
+    obsInterna:document.getElementById('fObsInterna').value,
+    previsao:document.getElementById('fPrevisao').value,
+    status:document.getElementById('fStatus').value,
+    contato:document.getElementById('fContato').value,
+    orcamento:document.getElementById('fOrcamento').value
+  };
+}
+
+function validarForm(d){
+  if(!d.num||!d.cliente||!d.modelo||!d.placa||!d.defeito){
+    toast('Preencha Cliente, Modelo, Placa e Defeito relatado.','err');
+    return false;
+  }
+  return true;
+}
+
+function salvarAgendamento(){
+  var d=getFormData();
+  if(!validarForm(d)) return;
+  var idx=agendamentos_.findIndex(function(a){ return String(a.id)===String(d.id)||a.num===d.num; });
+  if(idx>=0){ d.id=agendamentos_[idx].id; agendamentos_[idx]=d; } else { agendamentos_.unshift(d); nextAgendNum(true); }
+  editingId=d.id; saveLSAgend();
+  // salvar cliente automaticamente se novo
+  var cliExiste=clientes_.some(function(c){ return c.nome.trim().toLowerCase()===d.cliente.trim().toLowerCase(); });
+  if(!cliExiste && d.cliente.trim()){
+    clientes_.push({ id:Date.now(), nome:d.cliente.trim(), tel:d.telefone||'', doc:'', endereco:'' });
+    saveLSCli();
+  }
+  toast('Agendamento '+d.num+' salvo!','ok');
+}
+
+function clearForm(){
+  if(!confirm('Limpar o formulário?')) return;
+  ['fCliente','fTelefone','fModelo','fMarca','fAno','fPlaca','fCor','fKm','fMecanico','fDefeito','fObsInterna'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.value='';
+  });
+  document.getElementById('fTipoServico').value='';
+  document.getElementById('fPrioridade').value='Normal';
+  document.getElementById('fCombustivel').value='Flex';
+  document.getElementById('fChave').value='Não';
+  document.getElementById('fStatus').value='Agendado';
+  document.getElementById('fContato').value='WhatsApp';
+  document.getElementById('fOrcamento').value='Sim';
+  document.getElementById('fHora').value='08:00';
+  document.getElementById('fData').value=new Date().toISOString().split('T')[0];
+  document.getElementById('fPrevisao').value='';
+  document.getElementById('prazoVal').textContent='Selecione o tipo de serviço';
+  document.getElementById('prazoSub').textContent='';
+  prazoManual=false; editingId=null;
+  nextAgendNum();
+  toast('Formulário limpo.','');
+}
+
+/* ═══════════════════════════════════════
+   AGENDA — LISTAGEM
+═══════════════════════════════════════ */
+function statusClass(s){ return 'st-'+(s||'').replace(/\s+/g,''); }
+function renderAgenda(){
+  var filtData=document.getElementById('fFiltroData').value;
+  var filtStatus=document.getElementById('fFiltroStatus').value;
+  var busca=(document.getElementById('fFiltroBusca').value||'').toLowerCase();
+  var f=agendamentos_.filter(function(a){
+    return (!filtData||a.data===filtData)&&(!filtStatus||a.status===filtStatus)&&
+      (!busca||[a.cliente,a.placa,a.modelo,a.num].some(function(v){ return (v||'').toLowerCase().includes(busca); }));
+  });
+  var hojeStr=new Date().toISOString().split('T')[0];
+  document.getElementById('smHoje').textContent=agendamentos_.filter(function(a){ return a.data===hojeStr; }).length;
+  document.getElementById('smAndamento').textContent=agendamentos_.filter(function(a){ return a.status==='Em Andamento'; }).length;
+  document.getElementById('smPeca').textContent=agendamentos_.filter(function(a){ return a.status==='Aguardando Peça'; }).length;
+  document.getElementById('smConcluido').textContent=agendamentos_.filter(function(a){ return a.status==='Concluído'||a.status==='Entregue'; }).length;
+
+  var tbody=document.getElementById('agendaBody'), empty=document.getElementById('agendaEmpty');
+  tbody.innerHTML='';
+  if(!f.length){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  f.forEach(function(a){
+    var tr=document.createElement('tr');
+    tr.innerHTML=
+      '<td><strong>'+(a.num||'—')+'</strong></td>'+
+      '<td>'+(a.data?new Date(a.data+'T12:00:00').toLocaleDateString('pt-BR'):'—')+(a.hora?' '+a.hora:'')+'</td>'+
+      '<td>'+(a.cliente||'—')+(a.telefone?'<br><span style="font-size:11px;color:var(--text-sm)">'+a.telefone+'</span>':'')+'</td>'+
+      '<td>'+(a.modelo||'—')+(a.marca?' ('+a.marca+')':'')+'<br><span style="font-size:11px;font-weight:700;color:var(--red)">'+(a.placa||'—')+'</span></td>'+
+      '<td>'+(a.tipoServicoLabel||'—')+'</td>'+
+      '<td>'+(a.previsao?new Date(a.previsao+'T12:00:00').toLocaleDateString('pt-BR'):'—')+'</td>'+
+      '<td><span class="prio-'+(a.prioridade||'Normal')+'">'+(a.prioridade==='Urgente'?'🔴 Urgente':'Normal')+'</span></td>'+
+      '<td>'+(function(){
+        var opts=['Agendado','Em Andamento','Aguardando Peça','Concluído','Entregue','Cancelado'];
+        return '<select onchange="updStatus(\''+a.id+'\',this.value)" style="padding:3px 6px;border-radius:5px;border:1px solid var(--gray-bd);font-size:12px">'+
+          opts.map(function(s){ return '<option value="'+s+'" '+(a.status===s?'selected':'')+'>'+s+'</option>'; }).join('')+'</select>';
+      })()+'</td>'+
+      '<td><div class="hist-acts">'+
+        '<button class="btn-sm btn-sm-b" title="Editar" onclick="editAgend(\''+a.id+'\')">✏️</button>'+
+        '<button class="btn-sm btn-sm-g" title="PDF OS" onclick="rePDF(\''+a.id+'\')">🖨️</button>'+
+        '<button class="btn-sm btn-sm-r" title="Excluir" onclick="delAgend(\''+a.id+'\')">🗑️</button>'+
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+function updStatus(id,val){
+  var idx=agendamentos_.findIndex(function(a){ return String(a.id)===String(id); });
+  if(idx>=0){ agendamentos_[idx].status=val; saveLSAgend(); renderAgenda(); }
+}
+function delAgend(id){
+  if(!confirm('Excluir este agendamento?')) return;
+  agendamentos_=agendamentos_.filter(function(a){ return String(a.id)!==String(id); });
+  saveLSAgend(); renderAgenda(); toast('Removido.','ok');
+}
+function editAgend(id){
+  var a=agendamentos_.find(function(x){ return String(x.id)===String(id); }); if(!a) return;
+  editingId=id; prazoManual=true;
+  document.getElementById('fNum').value=a.num||'';
+  document.getElementById('fData').value=a.data||'';
+  document.getElementById('fHora').value=a.hora||'08:00';
+  document.getElementById('fPrioridade').value=a.prioridade||'Normal';
+  document.getElementById('fCliente').value=a.cliente||'';
+  document.getElementById('fTelefone').value=a.telefone||'';
+  document.getElementById('fModelo').value=a.modelo||'';
+  document.getElementById('fMarca').value=a.marca||'';
+  document.getElementById('fAno').value=a.ano||'';
+  document.getElementById('fPlaca').value=a.placa||'';
+  document.getElementById('fCor').value=a.cor||'';
+  document.getElementById('fKm').value=a.km||'';
+  document.getElementById('fCombustivel').value=a.combustivel||'Flex';
+  document.getElementById('fChave').value=a.chave||'Não';
+  document.getElementById('fTipoServico').value=a.tipoServico||'';
+  document.getElementById('fMecanico').value=a.mecanico||'';
+  document.getElementById('fDefeito').value=a.defeito||'';
+  document.getElementById('fObsInterna').value=a.obsInterna||'';
+  document.getElementById('fPrevisao').value=a.previsao||'';
+  document.getElementById('fStatus').value=a.status||'Agendado';
+  document.getElementById('fContato').value=a.contato||'WhatsApp';
+  document.getElementById('fOrcamento').value=a.orcamento||'Sim';
+  calcPrazo();
+  document.getElementById('fPrevisao').value=a.previsao||'';
+  document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelector('[data-tab="tabNovo"]').classList.add('active');
+  document.getElementById('tabNovo').classList.add('active');
+  window.scrollTo(0,0);
+  toast('Agendamento carregado para edição.','');
+}
+function rePDF(id){ editAgend(id); setTimeout(function(){ gerarPdfOS(); },250); }
+
+/* ═══════════════════════════════════════
+   CADASTRO DE CLIENTES
+═══════════════════════════════════════ */
+function saveClient(){
+  var nome=document.getElementById('cadCliNome').value.trim();
+  if(!nome){ toast('Informe o nome do cliente.','err'); return; }
+  clientes_.push({
+    id:Date.now(), nome:nome,
+    tel:document.getElementById('cadCliTel').value,
+    doc:document.getElementById('cadCliDoc').value,
+    endereco:document.getElementById('cadCliEndereco').value
+  });
+  saveLSCli(); renderCadLists();
+  ['cadCliNome','cadCliTel','cadCliDoc','cadCliEndereco'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  toast('Cliente salvo!','ok');
+}
+function renderCadLists(){
+  document.getElementById('cliCount').textContent=clientes_.length;
+  var cliDiv=document.getElementById('cliList');
+  if(!clientes_.length){ cliDiv.innerHTML='<div class="cad-empty">Nenhum cliente cadastrado.</div>'; return; }
+  cliDiv.innerHTML='';
+  clientes_.forEach(function(c){
+    var d=document.createElement('div'); d.className='cad-item';
+    d.innerHTML='<div style="flex:1;min-width:0"><div class="cad-item-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.nome+'</div><div class="cad-item-sub">Tel: '+(c.tel||'—')+(c.doc?' | '+c.doc:'')+'</div></div>'+
+      '<div style="display:flex;gap:5px;flex-shrink:0"><button class="btn-sm btn-sm-b" onclick="openEditClient('+c.id+')">✏️</button><button class="btn-sm btn-sm-r" onclick="delClient('+c.id+')">✕</button></div>';
+    cliDiv.appendChild(d);
+  });
+}
+function delClient(id){ if(!confirm('Excluir?')) return; clientes_=clientes_.filter(function(c){ return c.id!==id; }); saveLSCli(); renderCadLists(); }
+function openEditClient(id){
+  var c=clientes_.find(function(x){ return x.id===id; }); if(!c) return;
+  document.getElementById('editCliId').value=id;
+  document.getElementById('editCliNome').value=c.nome||'';
+  document.getElementById('editCliTel').value=c.tel||'';
+  document.getElementById('editCliDoc').value=c.doc||'';
+  document.getElementById('editCliEndereco').value=c.endereco||'';
+  document.getElementById('cliEditOv').classList.add('open');
+}
+function closeCliEdit(e){ if(e&&e.target!==document.getElementById('cliEditOv')) return; document.getElementById('cliEditOv').classList.remove('open'); }
+function saveEditClient(){
+  var id=parseInt(document.getElementById('editCliId').value);
+  var nome=(document.getElementById('editCliNome').value||'').trim(); if(!nome){ toast('Informe o nome.','err'); return; }
+  var idx=clientes_.findIndex(function(x){ return x.id===id; }); if(idx<0) return;
+  clientes_[idx]={ id:clientes_[idx].id, nome:nome,
+    tel:(document.getElementById('editCliTel').value||'').trim(),
+    doc:(document.getElementById('editCliDoc').value||'').trim(),
+    endereco:(document.getElementById('editCliEndereco').value||'').trim() };
+  saveLSCli(); renderCadLists(); document.getElementById('cliEditOv').classList.remove('open'); toast('Cliente atualizado!','ok');
+}
+
+/* ═══════════════════════════════════════
+   TOAST
+═══════════════════════════════════════ */
+function toast(msg,type){ var w=document.getElementById('toastW'); var el=document.createElement('div'); el.className='toast '+(type||''); el.innerHTML=(type==='ok'?'✅ ':type==='err'?'❌ ':'ℹ️ ')+msg; w.appendChild(el); setTimeout(function(){ el.remove(); },3200); }
+
+/* ═══════════════════════════════════════
+   PDF — ORDEM DE SERVIÇO
+═══════════════════════════════════════ */
+function getLogoData(){
+  var els=[document.getElementById('lnLogoImg'),document.getElementById('hdLogoImg')];
+  for(var i=0;i<els.length;i++){
+    var el=els[i]; if(!el||!el.complete||el.naturalWidth<10) continue;
+    try{
+      var cv=document.createElement('canvas');
+      cv.width=el.naturalWidth; cv.height=el.naturalHeight;
+      cv.getContext('2d').drawImage(el,0,0);
+      var d=cv.toDataURL('image/png');
+      if(d.length>500) return d;
+    }catch(e){}
+  }
+  return '';
+}
+function formatDatePT(iso){
+  if(!iso) return '—';
+  var months=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var p=iso.split('-');
+  return parseInt(p[2])+' de '+months[parseInt(p[1])-1]+' de '+p[0];
+}
+
+function gerarPdfOS(){
+  var d=getFormData();
+  if(!validarForm(d)) return;
+  var jsPDFLib=window.jspdf;
+  var doc=new jsPDFLib.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var W=210,H=297,mL=10,mR=10,mT=8;
+  var cW=W-mL-mR,y=mT;
+  var black=[10,10,10], red=[196,20,20], red2=[224,32,32];
+  var white=[255,255,255], gray=[240,240,240], grayBd=[224,220,220];
+  var text_=[26,26,26], textSm=[106,106,106], accentBg=[253,234,234];
+  function setC(a){ doc.setTextColor(a[0],a[1],a[2]); }
+  function setF(a){ doc.setFillColor(a[0],a[1],a[2]); }
+  function setD(a){ doc.setDrawColor(a[0],a[1],a[2]); }
+
+  var logoData=getLogoData();
+  var hdrH=30;
+  setF(black); doc.rect(mL,y,cW,hdrH,'F');
+  setF(red); doc.rect(mL,y,3,hdrH,'F');
+  if(logoData&&logoData.length>500){
+    try{ doc.addImage(logoData,'PNG',mL+8,y+3,24,24); }catch(ex){}
+  }
+  doc.setFont('helvetica','bold'); doc.setFontSize(17); setC(white);
+  doc.text('STOP CAR AUTO ELÉTRICA', mL+38, y+13);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); setC([230,190,190]);
+  doc.text('ABS · Airbag · Injeção · Módulos  |  WhatsApp '+EMPRESA.tel, mL+38, y+19);
+  doc.setFont('helvetica','bold'); doc.setFontSize(8.5); setC(red2);
+  doc.text('ORDEM DE SERVIÇO — AGENDAMENTO', mL+38, y+25);
+  y+=hdrH+3;
+
+  // Nº OS + status faixa
+  setF(accentBg); doc.rect(mL,y,cW,9,'F');
+  setD(red); doc.setLineWidth(0.3); doc.line(mL,y,mL+cW,y); doc.line(mL,y+9,mL+cW,y+9);
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); setC(black);
+  doc.text('Nº '+(d.num||'—'), mL+4, y+6);
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); setC(red);
+  doc.text('Status: '+(d.status||'Agendado')+(d.prioridade==='Urgente'?'   🔴 URGENTE':''), W-mR-4, y+6, {align:'right'});
+  y+=13;
+
+  function sectionTitle(t){
+    setF(black); doc.rect(mL,y,cW,7,'F');
+    setF(red); doc.rect(mL,y,3,7,'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); setC(white);
+    doc.text(t, mL+6, y+4.8);
+    y+=7;
+  }
+  function cell(lbl,val,x,cy,cw,ch,bg){
+    setF(bg||white); doc.rect(x,cy,cw,ch,'F');
+    setD(grayBd); doc.setLineWidth(0.25); doc.rect(x,cy,cw,ch,'S');
+    doc.setFont('helvetica','bold'); doc.setFontSize(6.5); setC(textSm);
+    doc.text(lbl, x+2, cy+3.6);
+    doc.setFont('helvetica','bold'); doc.setFontSize(8.5); setC(text_);
+    var lines=doc.splitTextToSize(String(val||'—'), cw-4);
+    doc.text(lines[0]||'', x+2, cy+8.2);
+  }
+
+  // Cliente
+  sectionTitle('DADOS DO CLIENTE');
+  var rH=12, c2=cW/2, c3=cW/3;
+  cell('Cliente', d.cliente, mL, y, c2, rH, [250,250,250]);
+  cell('Telefone / WhatsApp', d.telefone, mL+c2, y, c2, rH, [250,250,250]);
+  y+=rH;
+  cell('Data de Entrada', d.data?new Date(d.data+'T12:00:00').toLocaleDateString('pt-BR'):'—', mL, y, c3, rH);
+  cell('Horário', d.hora, mL+c3, y, c3, rH);
+  cell('Previsão de Entrega', d.previsao?new Date(d.previsao+'T12:00:00').toLocaleDateString('pt-BR'):'—', mL+c3*2, y, c3, rH, accentBg);
+  y+=rH+3;
+
+  // Veículo
+  sectionTitle('DADOS DO VEÍCULO');
+  cell('Modelo', d.modelo, mL, y, c3, rH);
+  cell('Marca', d.marca, mL+c3, y, c3, rH);
+  cell('Ano', d.ano, mL+c3*2, y, c3, rH);
+  y+=rH;
+  cell('Placa', d.placa, mL, y, c3, rH, accentBg);
+  cell('Cor', d.cor, mL+c3, y, c3, rH);
+  cell('Km Atual', d.km, mL+c3*2, y, c3, rH);
+  y+=rH;
+  cell('Combustível', d.combustivel, mL, y, c2, rH, [250,250,250]);
+  cell('Chave Reserva Entregue', d.chave, mL+c2, y, c2, rH, [250,250,250]);
+  y+=rH+3;
+
+  // Serviço
+  sectionTitle('SERVIÇO SOLICITADO');
+  cell('Tipo de Serviço', d.tipoServicoLabel||'—', mL, y, c2, rH);
+  cell('Mecânico Responsável', d.mecanico, mL+c2, y, c2, rH);
+  y+=rH+2;
+
+  doc.setFont('helvetica','bold'); doc.setFontSize(8); setC(textSm);
+  doc.text('DEFEITO RELATADO PELO CLIENTE:', mL+1, y+3);
+  y+=5;
+  var defLines=doc.splitTextToSize(d.defeito||'—', cW-6);
+  var defH=Math.max(14, defLines.length*4.2+6);
+  setF([250,250,250]); doc.rect(mL,y,cW,defH,'F');
+  setD(grayBd); doc.rect(mL,y,cW,defH,'S');
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); setC(text_);
+  doc.text(defLines, mL+3, y+6);
+  y+=defH+6;
+
+  if((d.obsInterna||'').trim()){
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); setC(textSm);
+    doc.text('OBSERVAÇÕES INTERNAS:', mL+1, y+3); y+=5;
+    var obsLines=doc.splitTextToSize(d.obsInterna,cW-6);
+    var obsH=Math.max(10,obsLines.length*4.2+6);
+    setF([253,246,246]); doc.rect(mL,y,cW,obsH,'F'); setD([243,192,192]); doc.rect(mL,y,cW,obsH,'S');
+    doc.setFont('helvetica','italic'); doc.setFontSize(8); setC(text_);
+    doc.text(obsLines, mL+3, y+6);
+    y+=obsH+6;
+  }
+
+  // Assinatura
+  if(y>H-55){ doc.addPage(); y=15; }
+  y+=8;
+  doc.setFont('helvetica','italic'); doc.setFontSize(9); setC(textSm);
+  doc.text('Recebido em: '+formatDatePT(d.data), W/2, y, {align:'center'});
+  y+=22;
+  setD(red); doc.setLineWidth(0.6);
+  doc.line(W/2-55, y, W/2+55, y);
+  y+=6;
+  doc.setFont('helvetica','bold'); doc.setFontSize(9.5); setC(black);
+  doc.text('Assinatura do Cliente', W/2, y, {align:'center'});
+
+  // Rodapé
+  var pages=doc.internal.getNumberOfPages();
+  for(var i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFillColor(10,10,10); doc.rect(mL,H-10,cW,8,'F');
+    doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(220,190,190);
+    doc.text('STOP CAR AUTO ELÉTRICA — '+EMPRESA.tel, mL+2, H-5);
+    doc.text('Pág. '+i+' de '+pages, W-mR-2, H-5, {align:'right'});
+  }
+
+  var slug=(d.cliente||'agendamento').replace(/[^a-zA-Z0-9 ]/g,'').trim().substring(0,20);
+  doc.save((d.num||'OS')+' - '+slug+' - '+(d.placa||'')+'.pdf');
+
+  // salva/atualiza no histórico ao gerar PDF
+  var idx=agendamentos_.findIndex(function(a){ return String(a.id)===String(d.id)||a.num===d.num; });
+  if(idx>=0){ d.id=agendamentos_[idx].id; agendamentos_[idx]=d; } else { agendamentos_.unshift(d); nextAgendNum(true); }
+  editingId=d.id; saveLSAgend();
+  toast('PDF da Ordem de Serviço gerado!','ok');
+}
+</script>
+</body>
+</html>
