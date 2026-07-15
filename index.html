@@ -341,7 +341,7 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--black);min-height:1
           <div class="field"><label>Prioridade</label>
             <select id="fPrioridade" onchange="calcPrazo()">
               <option value="Normal">Normal</option>
-              <option value="Urgente">🔴 Urgente</option>
+              <option value="Urgente">Urgente</option>
             </select>
           </div>
         </div>
@@ -389,23 +389,29 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--black);min-height:1
           <div class="field"><label>Tipo de Serviço <span class="req-star">★</span></label>
             <select id="fTipoServico" onchange="calcPrazo()">
               <option value="">Selecione o tipo de serviço...</option>
-              <option value="diag">🔍 Diagnóstico Elétrico</option>
-              <option value="reset_modulo">🧠 Reset de Módulo (ABS/Airbag/Injeção)</option>
-              <option value="chicote">🔌 Reparo de Chicote / Fiação</option>
-              <option value="troca_modulo">🧩 Troca de Módulo</option>
-              <option value="alarme">🚨 Instalação de Alarme / Rastreador</option>
-              <option value="arranque">🔋 Motor de Arranque / Alternador</option>
-              <option value="revisao">🛠️ Revisão Elétrica Completa</option>
-              <option value="peca_encomenda">📦 Serviço com Peça a Encomendar</option>
-              <option value="outro">✏️ Outro (definir previsão manualmente)</option>
+              <option value="revisao_chicote">Revisão Chicote</option>
+              <option value="scanner_diag">Scanner e Diagnóstico</option>
+              <option value="revisao_eletrica">Revisão Elétrica</option>
+              <option value="modulos">Módulos (Airbag - Injeção - Central - ABS)</option>
+              <option value="sistema_abs">Sistema ABS</option>
+              <option value="arranque_alternador">Motor de Arranque / Alternador</option>
+              <option value="avaliacao">Avaliação</option>
+              <option value="troca_modulo">Troca de Módulo</option>
+              <option value="diag_eletrico">Diagnóstico Elétrico</option>
             </select>
           </div>
           <div class="field"><label>Mecânico Responsável</label>
-            <input type="text" id="fMecanico" placeholder="Nome do responsável"></div>
+            <select id="fMecanico">
+              <option value="">Selecione...</option>
+              <option>Hanan Alves</option>
+              <option>Alexsandro</option>
+              <option>Gabriel</option>
+            </select>
+          </div>
         </div>
         <div class="field" style="margin-top:14px">
           <label>Defeito Relatado / Observação do Cliente <span class="req-star">★</span></label>
-          <textarea id="fDefeito" rows="4" placeholder="Descreva o defeito relatado pelo cliente. Ex: Veículo apresentando falha no painel, luz de injeção acesa, não pega na primeira..."></textarea>
+          <textarea id="fDefeito" rows="2" placeholder="Descreva o defeito relatado pelo cliente..."></textarea>
         </div>
         <div class="field" style="margin-top:14px">
           <label>Observações Internas (opcional)</label>
@@ -416,15 +422,16 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--black);min-height:1
           <div class="pb-left">
             <div class="pb-ic">⏱️</div>
             <div>
-              <div class="pb-lbl">Previsão Estimada de Entrega</div>
-              <div class="pb-val" id="prazoVal">Selecione o tipo de serviço</div>
+              <div class="pb-lbl">Previsão de Entrega (opcional)</div>
+              <div class="pb-val" id="prazoVal">Selecione o tipo de serviço ou informe as horas</div>
               <div class="pb-sub" id="prazoSub"></div>
             </div>
           </div>
-          <div class="field" style="min-width:170px">
-            <label>Ajustar Previsão</label>
-            <input type="date" id="fPrevisao" onchange="prazoManual=true">
+          <div class="field" style="min-width:150px">
+            <label>Horas Estimadas</label>
+            <input type="number" id="fHorasEstimadas" min="0" step="0.5" placeholder="Ex: 4" oninput="prazoManual=true;calcPrazo()">
           </div>
+          <input type="hidden" id="fPrevisao">
         </div>
       </div>
 
@@ -504,13 +511,15 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--black);min-height:1
         <div>
           <div class="form-card" style="margin-bottom:16px">
             <h3>👤 Novo Cliente</h3>
-            <div class="field" style="margin-bottom:12px"><label>Nome <span class="req-star">★</span></label>
-              <input type="text" id="cadCliNome" placeholder="Ex: João da Silva"></div>
-            <div class="field" style="margin-bottom:12px"><label>Celular</label>
-              <input type="text" id="cadCliCel" placeholder="(00) 00000-0000"></div>
+            <div class="row2" style="margin-bottom:12px">
+              <div class="field"><label>Nome <span class="req-star">★</span></label>
+                <input type="text" id="cadCliNome" placeholder="Ex: João da Silva"></div>
+              <div class="field"><label>Celular</label>
+                <input type="text" id="cadCliCel" placeholder="(00) 00000-0000"></div>
+            </div>
             <div class="field"><label>Endereço</label>
               <input type="text" id="cadCliEndereco" placeholder="Rua, número, bairro, cidade"></div>
-            <button class="btn-primary" style="margin-top:14px;padding:10px 18px;font-size:13px" onclick="saveClient()">✅ Salvar Cliente</button>
+            <button class="btn-primary" style="margin-top:12px;padding:9px 18px;font-size:13px" onclick="saveClient()">✅ Salvar Cliente</button>
           </div>
           <div class="cad-list">
             <div class="cad-list-header">
@@ -793,17 +802,29 @@ document.addEventListener('click',function(e){
    LÓGICA INTELIGENTE DE PREVISÃO
 ═══════════════════════════════════════ */
 var PRAZOS = {
-  diag:            { horas: 2,  label:'Diagnóstico Elétrico',                nota:'Diagnóstico costuma sair no mesmo dia.' },
-  reset_modulo:    { horas: 3,  label:'Reset de Módulo (ABS/Airbag/Injeção)', nota:'Serviço rápido, geralmente entregue no mesmo dia.' },
-  chicote:         { horas: 10, label:'Reparo de Chicote / Fiação',          nota:'Pode levar até 2 dias úteis, conforme extensão do dano.' },
-  troca_modulo:    { horas: 6,  label:'Troca de Módulo',                    nota:'Normalmente concluído em 1 dia útil.' },
-  alarme:          { horas: 5,  label:'Instalação de Alarme / Rastreador',  nota:'Instalação leva cerca de meio período.' },
-  arranque:        { horas: 8,  label:'Motor de Arranque / Alternador',     nota:'Reparo ou troca em até 1 dia útil.' },
-  revisao:         { horas: 16, label:'Revisão Elétrica Completa',          nota:'Serviço mais extenso, de 2 a 3 dias úteis.' },
-  peca_encomenda:  { horas: 48, label:'Serviço com Peça a Encomendar',      nota:'Prazo depende do fornecedor — estimativa de 5 a 7 dias úteis.' },
-  outro:           { horas: 8,  label:'Outro Serviço',                     nota:'Ajuste a previsão manualmente conforme avaliação.' }
+  revisao_chicote:     { horas: 10, label:'Revisão Chicote',                          nota:'Revisão de chicote e fiação — costuma levar até 2 dias úteis, conforme a extensão do reparo.' },
+  scanner_diag:        { horas: 2,  label:'Scanner e Diagnóstico',                    nota:'Leitura e diagnóstico via scanner — geralmente concluído no mesmo dia.' },
+  revisao_eletrica:    { horas: 16, label:'Revisão Elétrica',                         nota:'Revisão elétrica completa — serviço mais extenso, de 2 a 3 dias úteis.' },
+  modulos:             { horas: 4,  label:'Módulos (Airbag - Injeção - Central - ABS)', nota:'Reparo/reset de módulo — normalmente entregue no mesmo dia ou em algumas horas.' },
+  sistema_abs:         { horas: 6,  label:'Sistema ABS',                              nota:'Diagnóstico e reparo do sistema ABS — previsão de até 1 dia útil.' },
+  arranque_alternador: { horas: 8,  label:'Motor de Arranque / Alternador',           nota:'Reparo ou troca de motor de arranque/alternador — até 1 dia útil.' },
+  avaliacao:           { horas: 1.5,label:'Avaliação',                                nota:'Avaliação inicial do veículo — costuma sair em poucas horas.' },
+  troca_modulo:        { horas: 6,  label:'Troca de Módulo',                          nota:'Substituição de módulo — normalmente concluído em 1 dia útil.' },
+  diag_eletrico:       { horas: 3,  label:'Diagnóstico Elétrico',                     nota:'Diagnóstico elétrico geral — costuma sair no mesmo dia.' }
 };
 var HORAS_TRABALHO_DIA = 8;
+
+function toLocalISO(d){
+  var pad=function(n){ return String(n).padStart(2,'0'); };
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes())+':00';
+}
+function formatPrevisao(iso){
+  if(!iso) return '—';
+  var d=new Date(iso);
+  if(isNaN(d.getTime())) return '—';
+  var pad=function(n){ return String(n).padStart(2,'0'); };
+  return d.toLocaleDateString('pt-BR')+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
 
 function addHorasUteis(dataBase, horas){
   var d=new Date(dataBase.getTime());
@@ -824,18 +845,27 @@ function calcPrazo(){
   var prioridade=document.getElementById('fPrioridade').value;
   var valEl=document.getElementById('prazoVal');
   var subEl=document.getElementById('prazoSub');
-  if(!tipo){ valEl.textContent='Selecione o tipo de serviço'; subEl.textContent=''; return; }
+  var horasInp=document.getElementById('fHorasEstimadas');
   var conf=PRAZOS[tipo];
-  var horas=conf.horas;
-  if(prioridade==='Urgente') horas=Math.max(1,Math.round(horas*0.6));
+
+  // Preenche horas estimadas automaticamente ao trocar o serviço (se o campo não foi editado manualmente)
+  if(conf && !prazoManual){ horasInp.value=conf.horas; }
+
+  var horas=parseFloat(horasInp.value);
+  if(!horas || horas<=0){
+    valEl.textContent='Selecione o tipo de serviço ou informe as horas estimadas';
+    subEl.textContent=conf?conf.nota:'';
+    document.getElementById('fPrevisao').value='';
+    return;
+  }
+  if(prioridade==='Urgente') horas=Math.max(1,horas*0.6);
   var dataStr=document.getElementById('fData').value||new Date().toISOString().split('T')[0];
   var horaStr=document.getElementById('fHora').value||'08:00';
   var base=new Date(dataStr+'T'+horaStr+':00');
   var prev=addHorasUteis(base,horas);
-  var prevStr=prev.toISOString().split('T')[0];
-  if(!prazoManual){ document.getElementById('fPrevisao').value=prevStr; }
+  document.getElementById('fPrevisao').value=toLocalISO(prev);
   valEl.textContent=prev.toLocaleDateString('pt-BR')+' às '+String(prev.getHours()).padStart(2,'0')+':'+String(prev.getMinutes()).padStart(2,'0');
-  subEl.textContent=conf.nota+(prioridade==='Urgente'?' ⚡ Prioridade urgente aplicada.':'');
+  subEl.textContent=(conf?conf.nota:'Previsão calculada a partir das horas informadas.')+(prioridade==='Urgente'?' ⚡ Prioridade urgente aplicada.':'');
 }
 document.addEventListener('DOMContentLoaded',function(){
   var d=document.getElementById('fData'); if(d) d.addEventListener('change',calcPrazo);
@@ -864,6 +894,7 @@ function getFormData(){
     mecanico:document.getElementById('fMecanico').value,
     defeito:document.getElementById('fDefeito').value,
     obsInterna:document.getElementById('fObsInterna').value,
+    horasEstimadas:document.getElementById('fHorasEstimadas').value,
     previsao:document.getElementById('fPrevisao').value,
     status:document.getElementById('fStatus').value,
     contato:document.getElementById('fContato').value
@@ -907,7 +938,7 @@ function autoCadastrarClienteVeiculo(d){
 
 function clearForm(){
   if(!confirm('Limpar o formulário?')) return;
-  ['fCliente','fCelular','fEndereco','fPlaca','fMarca','fModelo','fMecanico','fDefeito','fObsInterna'].forEach(function(id){
+  ['fCliente','fCelular','fEndereco','fPlaca','fMarca','fModelo','fMecanico','fDefeito','fObsInterna','fHorasEstimadas'].forEach(function(id){
     var e=document.getElementById(id); if(e) e.value='';
   });
   document.getElementById('fTipoServico').value='';
@@ -917,7 +948,7 @@ function clearForm(){
   document.getElementById('fHora').value='08:00';
   document.getElementById('fData').value=new Date().toISOString().split('T')[0];
   document.getElementById('fPrevisao').value='';
-  document.getElementById('prazoVal').textContent='Selecione o tipo de serviço';
+  document.getElementById('prazoVal').textContent='Selecione o tipo de serviço ou informe as horas';
   document.getElementById('prazoSub').textContent='';
   prazoManual=false; editingId=null;
   nextAgendNum();
@@ -954,8 +985,8 @@ function renderAgenda(){
       '<td>'+(a.marca||'—')+' '+(a.modelo||'')+'</td>'+
       '<td style="font-weight:700;color:var(--red)">'+(a.placa||'—')+'</td>'+
       '<td>'+(a.tipoServicoLabel||'—')+'</td>'+
-      '<td>'+(a.previsao?new Date(a.previsao+'T12:00:00').toLocaleDateString('pt-BR'):'—')+'</td>'+
-      '<td><span class="prio-'+(a.prioridade||'Normal')+'">'+(a.prioridade==='Urgente'?'🔴 Urgente':'Normal')+'</span></td>'+
+      '<td>'+formatPrevisao(a.previsao)+'</td>'+
+      '<td><span class="prio-'+(a.prioridade||'Normal')+'">'+(a.prioridade||'Normal')+'</span></td>'+
       '<td>'+(function(){
         var opts=['Agendado','Em Andamento','Aguardando Peça','Concluído','Entregue','Cancelado'];
         return '<select onchange="updStatus(\''+a.id+'\',this.value)" style="padding:3px 6px;border-radius:5px;border:1px solid var(--gray-bd);font-size:12px">'+
@@ -997,8 +1028,9 @@ function editAgend(id){
   document.getElementById('fObsInterna').value=a.obsInterna||'';
   document.getElementById('fStatus').value=a.status||'Agendado';
   document.getElementById('fContato').value=a.contato||'WhatsApp';
+  document.getElementById('fHorasEstimadas').value=a.horasEstimadas||'';
   calcPrazo();
-  document.getElementById('fPrevisao').value=a.previsao||'';
+  if(a.previsao) document.getElementById('fPrevisao').value=a.previsao;
   document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
   document.querySelector('[data-tab="tabNovo"]').classList.add('active');
@@ -1173,10 +1205,25 @@ function gerarPdfAgendamento(){
 
   var logoData=getLogoData();
 
+  // ── Moldura da página: filete preto/vermelho ──
+  setD(black); doc.setLineWidth(1.1); doc.rect(4,4,W-8,H-8,'S');
+  setD(red); doc.setLineWidth(0.4); doc.rect(6,6,W-12,H-12,'S');
+
+  // ── Triângulo decorativo preto/vermelho no canto superior direito ──
+  function drawCornerTriangle(yTop,hH){
+    var xDir=mL+cW, cut=hH*1.15;
+    setF(red);          doc.triangle(xDir-cut,yTop,xDir,yTop,xDir,yTop+cut,'F');
+    var s=cut*0.30; setF(black); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
+    s=cut*0.50;      setF(red2); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
+    s=cut*0.68;      setF([35,35,35]); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
+    s=cut*0.84;      setF([235,70,70]); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
+  }
+
   // ── Cabeçalho formal com logo em destaque ──
   var hdrH=36;
   setF(black); doc.rect(mL,y,cW,hdrH,'F');
   setF(red); doc.rect(mL,y,3,hdrH,'F');
+  drawCornerTriangle(y,hdrH);
   var logoBoxW=34,logoBoxH=30,logoBoxX=mL+7,logoBoxY=y+3;
   if(logoData&&logoData.length>500){
     try{ doc.addImage(logoData,'PNG',logoBoxX,logoBoxY,logoBoxW,logoBoxH); }catch(ex){}
@@ -1201,7 +1248,7 @@ function gerarPdfAgendamento(){
   doc.setFont('helvetica','bold'); doc.setFontSize(12); setC(black);
   doc.text('AGENDAMENTO Nº '+(d.num||'—'), mL+4, y+6.8);
   doc.setFont('helvetica','bold'); doc.setFontSize(10.5); setC(red);
-  doc.text((d.status||'Agendado')+(d.prioridade==='Urgente'?'   🔴 URGENTE':''), W-mR-4, y+6.8, {align:'right'});
+  doc.text((d.status||'Agendado')+(d.prioridade==='Urgente'?'   ·   URGENTE':''), W-mR-4, y+6.8, {align:'right'});
   y+=15;
 
   function sectionTitle(t){
@@ -1226,7 +1273,7 @@ function gerarPdfAgendamento(){
   var rH=13, c3=cW/3;
   cell('Data de Entrada', d.data?new Date(d.data+'T12:00:00').toLocaleDateString('pt-BR'):'—', mL, y, c3, rH, [250,250,250]);
   cell('Horário', d.hora||'—', mL+c3, y, c3, rH, [250,250,250]);
-  cell('Previsão de Entrega', d.previsao?new Date(d.previsao+'T12:00:00').toLocaleDateString('pt-BR'):'—', mL+c3*2, y, c3, rH, accentBg);
+  cell('Previsão de Entrega', formatPrevisao(d.previsao), mL+c3*2, y, c3, rH, accentBg);
   y+=rH+3;
 
   // Cliente
@@ -1274,7 +1321,11 @@ function gerarPdfAgendamento(){
   }
 
   // Assinatura
-  if(y>H-55){ doc.addPage(); y=15; }
+  if(y>H-55){
+    doc.addPage(); y=15;
+    setD(black); doc.setLineWidth(1.1); doc.rect(4,4,W-8,H-8,'S');
+    setD(red); doc.setLineWidth(0.4); doc.rect(6,6,W-12,H-12,'S');
+  }
   y+=8;
   doc.setFont('helvetica','italic'); doc.setFontSize(9); setC(textSm);
   doc.text('Agendamento registrado em: '+formatDatePT(d.data), W/2, y, {align:'center'});
