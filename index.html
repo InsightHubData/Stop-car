@@ -248,6 +248,105 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--black);min-height:1
   .cad-grid{grid-template-columns:1fr}
 }
 </style>
+<!-- FIREBASE (opcional — preencha com os dados do seu projeto para sincronizar entre dispositivos) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+  // 1) Troque pelos dados do SEU projeto Firebase (Configurações do Projeto > Seus apps > SDK setup)
+  var firebaseConfig = {
+    apiKey: "COLE_AQUI_A_API_KEY",
+    authDomain: "SEU-PROJETO.firebaseapp.com",
+    projectId: "SEU-PROJETO",
+    storageBucket: "SEU-PROJETO.firebasestorage.app",
+    messagingSenderId: "SEU_SENDER_ID",
+    appId: "SEU_APP_ID"
+  };
+
+  // 2) Usuário de serviço criado em Authentication > Users (não é o login do sistema, é só para o app acessar o banco)
+  var FB_EMAIL = "app.stopcar@gmail.com";
+  var FB_PASS  = "TrocarEssaSenha@2026";
+
+  var app=null, db=null, auth=null, fbEnabled=false;
+  try{
+    if(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('COLE_AQUI')===-1){
+      app  = initializeApp(firebaseConfig);
+      db   = getFirestore(app);
+      auth = getAuth(app);
+      fbEnabled = true;
+    }
+  }catch(e){ console.warn('Firebase não configurado:', e.message); }
+
+  async function ensureAuth(){
+    if(!fbEnabled) return false;
+    if(!auth.currentUser){
+      try{ await signInWithEmailAndPassword(auth,FB_EMAIL,FB_PASS); }catch(e){ console.warn('FB auth:',e.message); return false; }
+    }
+    return true;
+  }
+
+  // ── AGENDAMENTOS ──
+  window.fbSaveAgendamento = async function(o){
+    if(!fbEnabled||!o||!o.id) return;
+    if(!(await ensureAuth())) return;
+    try{ await setDoc(doc(db,'agendamentos',String(o.id)), JSON.parse(JSON.stringify(o))); }
+    catch(e){ console.error('fbSaveAgendamento:',e.message); }
+  };
+  window.fbDeleteAgendamento = async function(id){
+    if(!fbEnabled) return;
+    if(!(await ensureAuth())) return;
+    try{ await deleteDoc(doc(db,'agendamentos',String(id))); }catch(e){}
+  };
+
+  // ── CLIENTES ──
+  window.fbSaveCliente = async function(o){
+    if(!fbEnabled||!o||!o.id) return;
+    if(!(await ensureAuth())) return;
+    try{ await setDoc(doc(db,'clientes',String(o.id)), JSON.parse(JSON.stringify(o))); }
+    catch(e){ console.error('fbSaveCliente:',e.message); }
+  };
+  window.fbDeleteCliente = async function(id){
+    if(!fbEnabled) return;
+    if(!(await ensureAuth())) return;
+    try{ await deleteDoc(doc(db,'clientes',String(id))); }catch(e){}
+  };
+
+  // ── VEÍCULOS ──
+  window.fbSaveVeiculo = async function(o){
+    if(!fbEnabled||!o||!o.id) return;
+    if(!(await ensureAuth())) return;
+    try{ await setDoc(doc(db,'veiculos',String(o.id)), JSON.parse(JSON.stringify(o))); }
+    catch(e){ console.error('fbSaveVeiculo:',e.message); }
+  };
+  window.fbDeleteVeiculo = async function(id){
+    if(!fbEnabled) return;
+    if(!(await ensureAuth())) return;
+    try{ await deleteDoc(doc(db,'veiculos',String(id))); }catch(e){}
+  };
+
+  // ── CARREGAR TUDO DO BANCO ──
+  window.fbLoadAll = async function(){
+    if(!fbEnabled) return;
+    if(!(await ensureAuth())) return;
+    try{
+      var agSnap=await getDocs(collection(db,'agendamentos'));
+      var ag=[]; agSnap.forEach(function(d){ var o=d.data(); if(o&&o.id) ag.push(o); });
+      if(typeof window._setAgendamentos==='function') window._setAgendamentos(ag);
+
+      var cliSnap=await getDocs(collection(db,'clientes'));
+      var cli=[]; cliSnap.forEach(function(d){ var o=d.data(); if(o&&o.id) cli.push(o); });
+      if(typeof window._setClientes==='function') window._setClientes(cli);
+
+      var veiSnap=await getDocs(collection(db,'veiculos'));
+      var vei=[]; veiSnap.forEach(function(d){ var o=d.data(); if(o&&o.id) vei.push(o); });
+      if(typeof window._setVeiculos==='function') window._setVeiculos(vei);
+    }catch(e){ console.warn('FB offline:', e.message); }
+  };
+
+  window._fbEnabled = function(){ return fbEnabled; };
+</script>
 </head>
 <body>
 <div class="bg-canvas"><div class="bg-orb"></div><div class="bg-orb"></div><div class="bg-orb"></div></div>
@@ -632,7 +731,10 @@ body{font-family:'Source Sans 3',sans-serif;background:var(--black);min-height:1
 var EMPRESA = {
   nome:      'STOP CAR AUTO ELÉTRICA',
   slogan:    'ABS · Airbag · Injeção · Módulos',
-  tel:       '(31) 98573-0440'
+  tel:       '(31) 98573-0440',
+  cnpj:      '41.564.008/0001-68',
+  endereco:  'R. Independência, 268 - Laranjeiras, Betim - MG, 32676-345',
+  mapsUrl:   'https://www.google.com/maps/search/R.%20Independ%C3%AAncia%2C%20268%20-%20Laranjeiras%2C%20Betim%20-%20MG%2C%2032676-345%2C%20Brasil/@-19.943,-44.1211,17z?hl=pt-BR'
 };
 
 /* ═══════════════════════════════════════
@@ -670,6 +772,20 @@ function saveLSAgend(){ try{ localStorage.setItem('sc_agend', JSON.stringify(age
 function saveLSCli(){ try{ localStorage.setItem('sc_cli', JSON.stringify(clientes_)); }catch(e){} }
 function saveLSVei(){ try{ localStorage.setItem('sc_vei', JSON.stringify(veiculos_)); }catch(e){} }
 
+// Setters chamados pelo módulo Firebase quando os dados chegam do banco
+window._setAgendamentos = function(arr){
+  agendamentos_ = arr; saveLSAgend();
+  if(document.getElementById('appShell').classList.contains('active')) renderAgenda();
+};
+window._setClientes = function(arr){
+  clientes_ = arr; saveLSCli();
+  if(document.getElementById('appShell').classList.contains('active')) renderCadLists();
+};
+window._setVeiculos = function(arr){
+  veiculos_ = arr; saveLSVei();
+  if(document.getElementById('appShell').classList.contains('active')) renderCadLists();
+};
+
 /* ═══════════════════════════════════════
    LOGIN
 ═══════════════════════════════════════ */
@@ -686,6 +802,7 @@ function doLogin(e){
     app.classList.add('active');
     document.getElementById('hdUser').textContent='👤 '+user.nome;
     initApp();
+    if(typeof window.fbLoadAll==='function') window.fbLoadAll();
   } else {
     var eb=document.getElementById('errBox');
     eb.style.display='flex';
@@ -914,6 +1031,7 @@ function salvarAgendamento(){
   var idx=agendamentos_.findIndex(function(a){ return String(a.id)===String(d.id)||a.num===d.num; });
   if(idx>=0){ d.id=agendamentos_[idx].id; agendamentos_[idx]=d; } else { agendamentos_.unshift(d); nextAgendNum(true); }
   editingId=d.id; saveLSAgend();
+  if(typeof window.fbSaveAgendamento==='function') window.fbSaveAgendamento(d);
   autoCadastrarClienteVeiculo(d);
   toast('Agendamento '+d.num+' salvo!','ok');
 }
@@ -923,15 +1041,19 @@ function autoCadastrarClienteVeiculo(d){
   if(d.cliente && d.cliente.trim()){
     var cliExiste=clientes_.some(function(c){ return c.nome.trim().toLowerCase()===d.cliente.trim().toLowerCase(); });
     if(!cliExiste){
-      clientes_.push({ id:Date.now(), nome:d.cliente.trim(), cel:d.celular||'', endereco:d.endereco||'' });
+      var novoCli={ id:Date.now(), nome:d.cliente.trim(), cel:d.celular||'', endereco:d.endereco||'' };
+      clientes_.push(novoCli);
       saveLSCli();
+      if(typeof window.fbSaveCliente==='function') window.fbSaveCliente(novoCli);
     }
   }
   if(d.placa && d.placa.trim()){
     var veiExiste=veiculos_.some(function(v){ return v.placa.trim().toUpperCase()===d.placa.trim().toUpperCase(); });
     if(!veiExiste){
-      veiculos_.push({ id:Date.now()+1, placa:d.placa.trim().toUpperCase(), marca:d.marca||'', modelo:d.modelo||'', dono:d.cliente||'' });
+      var novoVei={ id:Date.now()+1, placa:d.placa.trim().toUpperCase(), marca:d.marca||'', modelo:d.modelo||'', dono:d.cliente||'' };
+      veiculos_.push(novoVei);
       saveLSVei();
+      if(typeof window.fbSaveVeiculo==='function') window.fbSaveVeiculo(novoVei);
     }
   }
 }
@@ -1002,12 +1124,16 @@ function renderAgenda(){
 }
 function updStatus(id,val){
   var idx=agendamentos_.findIndex(function(a){ return String(a.id)===String(id); });
-  if(idx>=0){ agendamentos_[idx].status=val; saveLSAgend(); renderAgenda(); }
+  if(idx>=0){
+    agendamentos_[idx].status=val; saveLSAgend(); renderAgenda();
+    if(typeof window.fbSaveAgendamento==='function') window.fbSaveAgendamento(agendamentos_[idx]);
+  }
 }
 function delAgend(id){
   if(!confirm('Excluir este agendamento?')) return;
   agendamentos_=agendamentos_.filter(function(a){ return String(a.id)!==String(id); });
   saveLSAgend(); renderAgenda(); toast('Removido.','ok');
+  if(typeof window.fbDeleteAgendamento==='function') window.fbDeleteAgendamento(id);
 }
 function editAgend(id){
   var a=agendamentos_.find(function(x){ return String(x.id)===String(id); }); if(!a) return;
@@ -1046,16 +1172,22 @@ function rePDF(id){ editAgend(id); setTimeout(function(){ gerarPdfAgendamento();
 function saveClient(){
   var nome=document.getElementById('cadCliNome').value.trim();
   if(!nome){ toast('Informe o nome do cliente.','err'); return; }
-  clientes_.push({
+  var novoCli={
     id:Date.now(), nome:nome,
     cel:document.getElementById('cadCliCel').value,
     endereco:document.getElementById('cadCliEndereco').value
-  });
+  };
+  clientes_.push(novoCli);
   saveLSCli(); renderCadLists();
+  if(typeof window.fbSaveCliente==='function') window.fbSaveCliente(novoCli);
   ['cadCliNome','cadCliCel','cadCliEndereco'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   toast('Cliente salvo!','ok');
 }
-function delClient(id){ if(!confirm('Excluir?')) return; clientes_=clientes_.filter(function(c){ return c.id!==id; }); saveLSCli(); renderCadLists(); }
+function delClient(id){
+  if(!confirm('Excluir?')) return;
+  clientes_=clientes_.filter(function(c){ return c.id!==id; }); saveLSCli(); renderCadLists();
+  if(typeof window.fbDeleteCliente==='function') window.fbDeleteCliente(id);
+}
 function openEditClient(id){
   var c=clientes_.find(function(x){ return x.id===id; }); if(!c) return;
   document.getElementById('editCliId').value=id;
@@ -1073,6 +1205,7 @@ function saveEditClient(){
     cel:(document.getElementById('editCliCel').value||'').trim(),
     endereco:(document.getElementById('editCliEndereco').value||'').trim() };
   saveLSCli(); renderCadLists(); document.getElementById('cliEditOv').classList.remove('open'); toast('Cliente atualizado!','ok');
+  if(typeof window.fbSaveCliente==='function') window.fbSaveCliente(clientes_[idx]);
 }
 
 /* ═══════════════════════════════════════
@@ -1100,12 +1233,18 @@ function saveVeiculo(){
   if(!placa||!marca||!modelo){ toast('Preencha Placa, Marca e Modelo.','err'); return; }
   var existe=veiculos_.some(function(v){ return v.placa.toUpperCase()===placa; });
   if(existe){ toast('Já existe um veículo com essa placa.','err'); return; }
-  veiculos_.push({ id:Date.now(), placa:placa, marca:marca, modelo:modelo, dono:(document.getElementById('cadVeiDono').value||'').trim() });
+  var novoVei={ id:Date.now(), placa:placa, marca:marca, modelo:modelo, dono:(document.getElementById('cadVeiDono').value||'').trim() };
+  veiculos_.push(novoVei);
   saveLSVei(); renderCadLists();
+  if(typeof window.fbSaveVeiculo==='function') window.fbSaveVeiculo(novoVei);
   ['cadVeiDono','cadVeiPlaca','cadVeiMarca','cadVeiModelo'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   toast('Veículo salvo!','ok');
 }
-function delVeiculo(id){ if(!confirm('Excluir?')) return; veiculos_=veiculos_.filter(function(v){ return v.id!==id; }); saveLSVei(); renderCadLists(); }
+function delVeiculo(id){
+  if(!confirm('Excluir?')) return;
+  veiculos_=veiculos_.filter(function(v){ return v.id!==id; }); saveLSVei(); renderCadLists();
+  if(typeof window.fbDeleteVeiculo==='function') window.fbDeleteVeiculo(id);
+}
 function openEditVeiculo(id){
   var v=veiculos_.find(function(x){ return x.id===id; }); if(!v) return;
   document.getElementById('editVeiId').value=id;
@@ -1127,6 +1266,7 @@ function saveEditVeiculo(){
   if(dup>=0){ toast('Já existe outro veículo com essa placa.','err'); return; }
   veiculos_[idx]={ id:veiculos_[idx].id, placa:placa, marca:marca, modelo:modelo, dono:(document.getElementById('editVeiDono').value||'').trim() };
   saveLSVei(); renderCadLists(); document.getElementById('veiEditOv').classList.remove('open'); toast('Veículo atualizado!','ok');
+  if(typeof window.fbSaveVeiculo==='function') window.fbSaveVeiculo(veiculos_[idx]);
 }
 
 function renderCadLists(){
@@ -1205,25 +1345,21 @@ function gerarPdfAgendamento(){
 
   var logoData=getLogoData();
 
-  // ── Moldura da página: filete preto/vermelho ──
-  setD(black); doc.setLineWidth(1.1); doc.rect(4,4,W-8,H-8,'S');
-  setD(red); doc.setLineWidth(0.4); doc.rect(6,6,W-12,H-12,'S');
-
-  // ── Triângulo decorativo preto/vermelho no canto superior direito ──
-  function drawCornerTriangle(yTop,hH){
-    var xDir=mL+cW, cut=hH*1.15;
-    setF(red);          doc.triangle(xDir-cut,yTop,xDir,yTop,xDir,yTop+cut,'F');
-    var s=cut*0.30; setF(black); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
-    s=cut*0.50;      setF(red2); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
-    s=cut*0.68;      setF([35,35,35]); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
-    s=cut*0.84;      setF([235,70,70]); doc.triangle(xDir-cut+s,yTop,xDir,yTop,xDir,yTop+cut-s,'F');
+  // ── Detalhe no canto superior direito: faixa vermelha pequena com alguns traços ──
+  function drawCornerAccent(yTop){
+    var xDir=mL+cW, cut=15;
+    setF(red);
+    doc.triangle(xDir-cut,yTop,xDir,yTop,xDir,yTop+cut,'F');
+    setD([20,20,20]); doc.setLineWidth(0.7);
+    doc.line(xDir-cut*0.6,yTop, xDir,yTop+cut*0.6);
+    doc.line(xDir-cut*0.32,yTop, xDir,yTop+cut*0.32);
   }
 
   // ── Cabeçalho formal com logo em destaque ──
   var hdrH=36;
   setF(black); doc.rect(mL,y,cW,hdrH,'F');
   setF(red); doc.rect(mL,y,3,hdrH,'F');
-  drawCornerTriangle(y,hdrH);
+  drawCornerAccent(y);
   var logoBoxW=34,logoBoxH=30,logoBoxX=mL+7,logoBoxY=y+3;
   if(logoData&&logoData.length>500){
     try{ doc.addImage(logoData,'PNG',logoBoxX,logoBoxY,logoBoxW,logoBoxH); }catch(ex){}
@@ -1232,14 +1368,16 @@ function gerarPdfAgendamento(){
     doc.text('STOP CAR',logoBoxX+logoBoxW/2,logoBoxY+logoBoxH/2+1,{align:'center'});
   }
   var txtX=mL+48;
-  doc.setFont('helvetica','bold'); doc.setFontSize(18); setC(white);
-  doc.text('STOP CAR AUTO ELÉTRICA', txtX, y+13);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); setC([230,190,190]);
-  doc.text('ABS · Airbag · Injeção · Módulos', txtX, y+19.5);
-  doc.setFont('helvetica','normal'); doc.setFontSize(9); setC([230,190,190]);
-  doc.text('WhatsApp: '+EMPRESA.tel, txtX, y+25);
-  doc.setFont('helvetica','bold'); doc.setFontSize(9.5); setC(red2);
-  doc.text('COMPROVANTE DE AGENDAMENTO', txtX, y+31.5);
+  doc.setFont('helvetica','bold'); doc.setFontSize(17); setC(white);
+  doc.text('STOP CAR AUTO ELÉTRICA', txtX, y+11.5);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); setC([230,190,190]);
+  doc.text('ABS · Airbag · Injeção · Módulos   |   CNPJ '+EMPRESA.cnpj, txtX, y+16.8);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); setC([230,190,190]);
+  doc.text('WhatsApp: '+EMPRESA.tel, txtX, y+21.6);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.8); setC([120,190,255]);
+  doc.textWithLink(EMPRESA.endereco, txtX, y+26.4, { url: EMPRESA.mapsUrl });
+  doc.setFont('helvetica','bold'); doc.setFontSize(9); setC(red2);
+  doc.text('COMPROVANTE DE AGENDAMENTO', txtX, y+32.2);
   y+=hdrH+4;
 
   // ── Faixa Nº + Status ──
@@ -1321,11 +1459,7 @@ function gerarPdfAgendamento(){
   }
 
   // Assinatura
-  if(y>H-55){
-    doc.addPage(); y=15;
-    setD(black); doc.setLineWidth(1.1); doc.rect(4,4,W-8,H-8,'S');
-    setD(red); doc.setLineWidth(0.4); doc.rect(6,6,W-12,H-12,'S');
-  }
+  if(y>H-55){ doc.addPage(); y=15; }
   y+=8;
   doc.setFont('helvetica','italic'); doc.setFontSize(9); setC(textSm);
   doc.text('Agendamento registrado em: '+formatDatePT(d.data), W/2, y, {align:'center'});
@@ -1355,6 +1489,7 @@ function gerarPdfAgendamento(){
   var idx=agendamentos_.findIndex(function(a){ return String(a.id)===String(d.id)||a.num===d.num; });
   if(idx>=0){ d.id=agendamentos_[idx].id; agendamentos_[idx]=d; } else { agendamentos_.unshift(d); nextAgendNum(true); }
   editingId=d.id; saveLSAgend();
+  if(typeof window.fbSaveAgendamento==='function') window.fbSaveAgendamento(d);
   autoCadastrarClienteVeiculo(d);
   toast('PDF do agendamento gerado!','ok');
 }
